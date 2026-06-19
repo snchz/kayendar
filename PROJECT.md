@@ -1,7 +1,7 @@
 # Project: Kayendar (CalDAV/CardDAV Server & Modern SPA client)
 
 ## Architecture
-Kayendar is a lightweight, self-contained CalDAV and CardDAV synchronization server with an integrated web SPA client.
+Kayendar is a lightweight, self-contained CalDAV and CardDAV synchronization server with an integrated web SPA client..
 - **Backend (Python)**:
   - Custom WSGI/ASGI or Flask-based application handling WebDAV/CalDAV/CardDAV sync requests.
   - JSON-based user management stored in `data/users.json`.
