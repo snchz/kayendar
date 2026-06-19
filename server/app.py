@@ -1,0 +1,60 @@
+"""
+kayendar/app.py
+
+FastAPI application factory.
+"""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
+from . import storage
+from .dav import router as dav_router
+from .web import router as web_router
+
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+def create_app() -> FastAPI:
+    app = FastAPI(
+        title="Kayendar",
+        description="A lightweight CalDAV/CardDAV server with a modern web client.",
+        version="1.0.0",
+    )
+
+    # Configure data directory
+    data_dir = os.environ.get("KAYENDAR_DATA_DIR", "data")
+    storage.set_data_dir(data_dir)
+
+    # Mount DAV endpoints
+    app.include_router(dav_router, prefix="/dav")
+
+    # Mount REST API for the web client
+    app.include_router(web_router)
+
+    # Serve static files (SPA assets)
+    if STATIC_DIR.exists():
+        app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
+
+    # SPA catch-all — serve index.html for all non-API, non-DAV routes
+    @app.get("/", response_model=None)
+    @app.get("/{full_path:path}", response_model=None)
+    async def spa(full_path: str = ""):
+        # Don't intercept API or DAV routes
+        if full_path.startswith("api/") or full_path.startswith("dav/"):
+            from fastapi.responses import Response
+            return Response(status_code=404)
+        index = STATIC_DIR / "index.html"
+        if index.exists():
+            return FileResponse(str(index))
+        return HTMLResponse("<h1>Kayendar</h1><p>Static files not found.</p>")
+
+    return app
+
+
+app = create_app()

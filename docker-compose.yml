@@ -1,0 +1,27 @@
+services:
+  kayendar:
+    image: ghcr.io/snchz/kayendar:latest
+    # To build locally instead:
+    # build: .
+    container_name: kayendar
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - kayendar_data:/data
+    environment:
+      KAYENDAR_DATA_DIR: /data
+      KAYENDAR_HOST: 0.0.0.0
+      KAYENDAR_PORT: 8000
+      # IMPORTANT: Change this to a long random string!
+      KAYENDAR_SECRET_KEY: "change-me-to-a-long-random-string"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/dav/', method='OPTIONS')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  kayendar_data:
+    driver: local
