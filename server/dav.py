@@ -194,10 +194,12 @@ async def dav_propfind(path: str, request: Request) -> Response:
 
     # --- root ---
     if not parts:
+        user_principal = f"/dav/{username}/"
         responses = [_propfind_response(
             "/dav/",
             {_ns("D", "resourcetype"): _principal_resourcetype(),
-             _ns("D", "displayname"): "Kayendar"},
+             _ns("D", "displayname"): "Kayendar",
+             _ns("D", "current-user-principal"): user_principal},
         )]
         return _xml_response(_multistatus(*responses))
 
@@ -206,11 +208,20 @@ async def dav_propfind(path: str, request: Request) -> Response:
         uname = parts[0]
         if uname != username:
             return Response(status_code=403, headers={"DAV": DAV_HEADER})
+        
+        cal_home = ET.Element(_ns("D", "href"))
+        cal_home.text = f"/dav/{uname}/"
+        
+        card_home = ET.Element(_ns("D", "href"))
+        card_home.text = f"/dav/{uname}/"
+        
         responses = [_propfind_response(
             f"/dav/{uname}/",
             {_ns("D", "resourcetype"): _principal_resourcetype(),
              _ns("D", "displayname"): uname,
-             _ns("D", "current-user-principal"): f"/dav/{uname}/"},
+             _ns("D", "current-user-principal"): f"/dav/{uname}/",
+             _ns("C", "calendar-home-set"): cal_home,
+             _ns("CR", "addressbook-home-set"): card_home},
         )]
         if depth != "0":
             for col in storage.list_collections(uname):
