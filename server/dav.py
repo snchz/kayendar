@@ -113,17 +113,20 @@ def _propfind_response(href: str, props: dict, missing: list | None = None) -> E
         propstat_ok = ET.SubElement(resp, _ns("D", "propstat"))
         prop_el = ET.SubElement(propstat_ok, _ns("D", "prop"))
         for tag, value in props.items():
-            el = ET.SubElement(prop_el, tag)
-            if isinstance(value, str):
-                el.text = value
-            elif isinstance(value, list):
-                for child in value:
-                    if isinstance(child, ET.Element):
-                        el.append(child)
-                    else:
-                        ET.SubElement(el, child)
-            elif isinstance(value, ET.Element):
-                el.append(value)
+            if isinstance(value, ET.Element) and value.tag == tag:
+                prop_el.append(value)
+            else:
+                el = ET.SubElement(prop_el, tag)
+                if isinstance(value, str):
+                    el.text = value
+                elif isinstance(value, list):
+                    for child in value:
+                        if isinstance(child, ET.Element):
+                            el.append(child)
+                        else:
+                            ET.SubElement(el, child)
+                elif isinstance(value, ET.Element):
+                    el.append(value)
         ET.SubElement(propstat_ok, _ns("D", "status")).text = "HTTP/1.1 200 OK"
 
     if missing:
