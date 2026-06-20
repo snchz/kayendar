@@ -15,6 +15,9 @@ services:
       KAYENDAR_PORT: 8000
       # IMPORTANT: Change this to a long random string!
       KAYENDAR_SECRET_KEY: "change-me-to-a-long-random-string"
+      # Initial Admin User configuration (Auto-provisioned on startup if database is empty)
+      # KAYENDAR_ADMIN_USER: "admin"
+      # KAYENDAR_ADMIN_PASSWORD: "change-me-to-a-secure-password"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/dav/', method='OPTIONS')"]
       interval: 30s

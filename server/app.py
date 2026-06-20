@@ -31,6 +31,20 @@ def create_app() -> FastAPI:
     data_dir = os.environ.get("KAYENDAR_DATA_DIR", "data")
     storage.set_data_dir(data_dir)
 
+    # Configure auth database path
+    from . import auth
+    auth.USER_DB_PATH = os.path.join(data_dir, "users.json")
+
+    # Auto-provision admin user if environment variables are set
+    admin_user = os.environ.get("KAYENDAR_ADMIN_USER")
+    admin_pass = os.environ.get("KAYENDAR_ADMIN_PASSWORD")
+    if admin_user and admin_pass:
+        try:
+            if auth.create_user(admin_user, admin_pass):
+                print(f"Auto-provisioned initial admin user: '{admin_user}'")
+        except Exception as e:
+            print(f"Error auto-provisioning admin user: {e}")
+
     # Mount DAV endpoints
     app.include_router(dav_router, prefix="/dav")
 
