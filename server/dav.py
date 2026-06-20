@@ -160,6 +160,13 @@ def _principal_resourcetype() -> ET.Element:
     return rt
 
 
+def _current_user_privilege_set() -> ET.Element:
+    privs = ET.Element(_ns("D", "current-user-privilege-set"))
+    p = ET.SubElement(privs, _ns("D", "privilege"))
+    ET.SubElement(p, _ns("D", "all"))
+    return privs
+
+
 def _parse_depth(request: Request) -> str:
     return request.headers.get("Depth", "1")
 
@@ -245,7 +252,8 @@ async def dav_propfind(path: str, request: Request) -> Response:
                  _ns("D", "displayname"): username,
                  _ns("D", "current-user-principal"): user_principal,
                  _ns("C", "calendar-home-set"): cal_home,
-                 _ns("CR", "addressbook-home-set"): card_home},
+                 _ns("CR", "addressbook-home-set"): card_home,
+                 _ns("D", "current-user-privilege-set"): _current_user_privilege_set()},
                 requested_tags
             ))
         res_xml = _multistatus(*responses)
@@ -271,7 +279,8 @@ async def dav_propfind(path: str, request: Request) -> Response:
              _ns("D", "displayname"): uname,
              _ns("D", "current-user-principal"): f"/dav/{uname}/",
              _ns("C", "calendar-home-set"): cal_home,
-             _ns("CR", "addressbook-home-set"): card_home},
+             _ns("CR", "addressbook-home-set"): card_home,
+             _ns("D", "current-user-privilege-set"): _current_user_privilege_set()},
             requested_tags
         )]
         if depth != "0":
@@ -323,6 +332,7 @@ def _collection_propfind_response(username: str, col: storage.CollectionMeta, re
         _ns("D", "resourcetype"): rt,
         _ns("D", "displayname"): col.display_name,
         _ns("D", "getetag"): col.slug,
+        _ns("D", "current-user-privilege-set"): _current_user_privilege_set(),
     }
     if col.collection_type == "calendar":
         props[_ns("C", "calendar-color")] = col.color
@@ -331,8 +341,10 @@ def _collection_propfind_response(username: str, col: storage.CollectionMeta, re
             ET.Element(_ns("C", "comp"), attrib={"name": "VEVENT"}),
             ET.Element(_ns("C", "comp"), attrib={"name": "VTODO"}),
         ]
+        props[_ns("CS", "getctag")] = "1"
     else:
         props[_ns("CR", "addressbook-description")] = col.description
+        props[_ns("CS", "getctag")] = "1"
 
     missing = []
     if requested_tags:
