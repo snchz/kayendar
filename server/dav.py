@@ -99,11 +99,6 @@ def _xml_response(body: str, status: int = 207) -> Response:
 
 def _multistatus(*responses: ET.Element) -> str:
     ms = ET.Element(_ns("D", "multistatus"))
-    ms.set("xmlns:D", NS["D"])
-    ms.set("xmlns:C", NS["C"])
-    ms.set("xmlns:CR", NS["CR"])
-    ms.set("xmlns:CS", NS["CS"])
-    ms.set("xmlns:ICAL", NS["ICAL"])
     for r in responses:
         ms.append(r)
     return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(ms, encoding="unicode")
