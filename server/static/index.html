@@ -202,6 +202,23 @@
           <select id="event-calendar"></select>
         </div>
         <div class="field">
+          <label for="event-location">Location</label>
+          <input id="event-location" type="text" placeholder="Optional location..." />
+        </div>
+        <div class="field">
+          <label for="event-alarm">Reminder</label>
+          <select id="event-alarm">
+            <option value="">None</option>
+            <option value="PT0S">At time of event</option>
+            <option value="-PT5M">5 minutes before</option>
+            <option value="-PT15M">15 minutes before</option>
+            <option value="-PT30M">30 minutes before</option>
+            <option value="-PT1H">1 hour before</option>
+            <option value="-PT2H">2 hours before</option>
+            <option value="-P1D">1 day before</option>
+          </select>
+        </div>
+        <div class="field">
           <label for="event-description">Description</label>
           <textarea id="event-description" rows="3" placeholder="Optional description..."></textarea>
         </div>

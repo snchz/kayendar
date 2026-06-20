@@ -54,10 +54,13 @@ function parseIcs(content) {
   const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const events = [];
   let cur = null;
+  let inAlarm = false;
   for (const raw of lines) {
     const line = raw.trimEnd();
     if (line === 'BEGIN:VEVENT') { cur = {}; continue; }
     if (line === 'END:VEVENT') { if (cur) { events.push(cur); cur = null; } continue; }
+    if (line === 'BEGIN:VALARM') { inAlarm = true; continue; }
+    if (line === 'END:VALARM') { inAlarm = false; continue; }
     if (!cur) continue;
     const colon = line.indexOf(':');
     if (colon < 0) continue;
@@ -66,7 +69,9 @@ function parseIcs(content) {
     if (key === 'DTSTART')   cur.start = parseIcsDate(val);
     if (key === 'DTEND')     cur.end   = parseIcsDate(val);
     if (key === 'SUMMARY')   cur.title = val;
-    if (key === 'DESCRIPTION') cur.description = val;
+    if (key === 'DESCRIPTION' && !inAlarm) cur.description = val;
+    if (key === 'LOCATION')    cur.location = val;
+    if (key === 'TRIGGER' && inAlarm) cur.alarm = val;
     if (key === 'UID')       cur.uid = val;
   }
   return events;
@@ -92,8 +97,15 @@ function formatIcsDate(d, allDay = false) {
   return `${y}${mo}${dd}T${h}${mi}${s}`;
 }
 
-function buildIcs(uid, title, start, end, description = '') {
+function buildIcs(uid, title, start, end, description = '', location = '', alarm = '') {
   const now = formatIcsDate(new Date()) + 'Z';
+  const alarmLines = alarm ? [
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    `TRIGGER:${alarm}`,
+    `DESCRIPTION:${title}`,
+    'END:VALARM'
+  ] : [];
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -105,6 +117,8 @@ function buildIcs(uid, title, start, end, description = '') {
     `DTEND:${formatIcsDate(end)}`,
     `SUMMARY:${title}`,
     description ? `DESCRIPTION:${description}` : '',
+    location ? `LOCATION:${location}` : '',
+    ...alarmLines,
     'END:VEVENT',
     'END:VCALENDAR',
   ].filter(Boolean).join('\r\n') + '\r\n';
@@ -476,6 +490,32 @@ function openEditEvent(ev) {
   document.getElementById('event-filename').value = ev.filename || '';
   document.getElementById('event-collection').value = ev.collectionSlug || '';
   document.getElementById('event-title').value = ev.title || '';
+  document.getElementById('event-location').value = ev.location || '';
+  
+  // Handle alarm/reminder field
+  const alarmSelect = document.getElementById('event-alarm');
+  const standardAlarms = ['', 'PT0S', '-PT5M', '-PT15M', '-PT30M', '-PT1H', '-PT2H', '-P1D'];
+  for (let i = alarmSelect.options.length - 1; i >= 0; i--) {
+    if (!standardAlarms.includes(alarmSelect.options[i].value)) {
+      alarmSelect.remove(i);
+    }
+  }
+  let alarmValue = ev.alarm || '';
+  let optionExists = false;
+  for (let i = 0; i < alarmSelect.options.length; i++) {
+    if (alarmSelect.options[i].value === alarmValue) {
+      optionExists = true;
+      break;
+    }
+  }
+  if (alarmValue && !optionExists) {
+    const newOpt = document.createElement('option');
+    newOpt.value = alarmValue;
+    newOpt.text = `Custom (${alarmValue})`;
+    alarmSelect.add(newOpt);
+  }
+  alarmSelect.value = alarmValue;
+
   document.getElementById('event-description').value = ev.description || '';
   if (ev.start) document.getElementById('event-start').value = toDatetimeLocal(ev.start);
   if (ev.end)   document.getElementById('event-end').value   = toDatetimeLocal(ev.end);
@@ -510,6 +550,8 @@ async function saveEvent(e) {
   const title = document.getElementById('event-title').value.trim();
   const start = new Date(document.getElementById('event-start').value);
   const end   = new Date(document.getElementById('event-end').value);
+  const location = document.getElementById('event-location').value.trim();
+  const alarm    = document.getElementById('event-alarm').value;
   const description = document.getElementById('event-description').value.trim();
   const slug  = document.getElementById('event-calendar').value;
   let uid     = document.getElementById('event-uid').value;
@@ -521,7 +563,7 @@ async function saveEvent(e) {
   if (!uid) uid = generateUid();
   if (!filename) filename = uid + '.ics';
 
-  const content = buildIcs(uid, title, start, end, description);
+  const content = buildIcs(uid, title, start, end, description, location, alarm);
 
   try {
     await api.put(`/api/collections/${slug}/items/${filename}`, { content });
