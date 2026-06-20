@@ -341,10 +341,10 @@ def _collection_propfind_response(username: str, col: storage.CollectionMeta, re
             ET.Element(_ns("C", "comp"), attrib={"name": "VEVENT"}),
             ET.Element(_ns("C", "comp"), attrib={"name": "VTODO"}),
         ]
-        props[_ns("CS", "getctag")] = "1"
+        props[_ns("CS", "getctag")] = storage.get_collection_ctag(username, col.slug)
     else:
         props[_ns("CR", "addressbook-description")] = col.description
-        props[_ns("CS", "getctag")] = "1"
+        props[_ns("CS", "getctag")] = storage.get_collection_ctag(username, col.slug)
 
     missing = []
     if requested_tags:

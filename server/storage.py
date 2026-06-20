@@ -357,3 +357,18 @@ def delete_user_data(username: str) -> None:
     user_dir = _user_dir(username)
     if os.path.isdir(user_dir):
         shutil.rmtree(user_dir)
+
+
+def get_collection_ctag(username: str, slug: str) -> str:
+    """Calculate a dynamic CTag for a collection based on directory and file modification times."""
+    col_dir = _collection_dir(username, slug)
+    if not os.path.isdir(col_dir):
+        return "0"
+    try:
+        mtimes = [os.path.getmtime(col_dir)]
+        for entry in os.scandir(col_dir):
+            if entry.is_file():
+                mtimes.append(entry.stat().st_mtime)
+        return str(int(sum(mtimes)))
+    except Exception:
+        return "1"
