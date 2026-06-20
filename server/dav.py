@@ -181,6 +181,33 @@ async def dav_options(path: str, request: Request) -> Response:
     )
 
 
+def _parse_requested_props(body_str: str) -> list[str]:
+    """Parse the XML body of a PROPFIND request and return a list of requested property tags (fully qualified)."""
+    if not body_str.strip():
+        return []
+    try:
+        root = ET.fromstring(body_str.encode("utf-8"))
+        prop_el = None
+        for el in root.iter():
+            if el.tag.endswith("}prop") or el.tag == "prop":
+                prop_el = el
+                break
+        if prop_el is not None:
+            return [child.tag for child in prop_el]
+    except Exception as e:
+        print(f"Error parsing PROPFIND XML: {e}")
+    return []
+
+
+def _make_propfind_response_helper(href: str, props: dict, requested_tags: list[str]) -> ET.Element:
+    missing = []
+    if requested_tags:
+        for tag in requested_tags:
+            if tag not in props:
+                missing.append(tag)
+    return _propfind_response(href, props, missing)
+
+
 # PROPFIND — property discovery
 @router.api_route("/{path:path}", methods=["PROPFIND"])
 async def dav_propfind(path: str, request: Request) -> Response:
@@ -195,28 +222,31 @@ async def dav_propfind(path: str, request: Request) -> Response:
 
     depth = _parse_depth(request)
     parts = [p for p in path.strip("/").split("/") if p]
+    requested_tags = _parse_requested_props(body_str)
 
     # --- root ---
     if not parts:
         user_principal = f"/dav/{username}/"
-        responses = [_propfind_response(
+        responses = [_make_propfind_response_helper(
             "/dav/",
             {_ns("D", "resourcetype"): _principal_resourcetype(),
              _ns("D", "displayname"): "Kayendar",
              _ns("D", "current-user-principal"): user_principal},
+            requested_tags
         )]
         if depth != "0":
             cal_home = ET.Element(_ns("D", "href"))
             cal_home.text = user_principal
             card_home = ET.Element(_ns("D", "href"))
             card_home.text = user_principal
-            responses.append(_propfind_response(
+            responses.append(_make_propfind_response_helper(
                 user_principal,
                 {_ns("D", "resourcetype"): _principal_resourcetype(),
                  _ns("D", "displayname"): username,
                  _ns("D", "current-user-principal"): user_principal,
                  _ns("C", "calendar-home-set"): cal_home,
                  _ns("CR", "addressbook-home-set"): card_home},
+                requested_tags
             ))
         res_xml = _multistatus(*responses)
         print(f"[DEBUG DAV] PROPFIND Root Response: {res_xml}")
@@ -235,17 +265,18 @@ async def dav_propfind(path: str, request: Request) -> Response:
         card_home = ET.Element(_ns("D", "href"))
         card_home.text = f"/dav/{uname}/"
         
-        responses = [_propfind_response(
+        responses = [_make_propfind_response_helper(
             f"/dav/{uname}/",
             {_ns("D", "resourcetype"): _principal_resourcetype(),
              _ns("D", "displayname"): uname,
              _ns("D", "current-user-principal"): f"/dav/{uname}/",
              _ns("C", "calendar-home-set"): cal_home,
              _ns("CR", "addressbook-home-set"): card_home},
+            requested_tags
         )]
         if depth != "0":
             for col in storage.list_collections(uname):
-                responses.append(_collection_propfind_response(uname, col))
+                responses.append(_collection_propfind_response(uname, col, requested_tags))
         res_xml = _multistatus(*responses)
         print(f"[DEBUG DAV] PROPFIND Principal Response: {res_xml}")
         return _xml_response(res_xml)
@@ -260,10 +291,10 @@ async def dav_propfind(path: str, request: Request) -> Response:
         if col is None:
             print(f"[DEBUG DAV] PROPFIND Collection Not Found: slug={slug}")
             return Response(status_code=404, headers={"DAV": DAV_HEADER})
-        responses = [_collection_propfind_response(uname, col)]
+        responses = [_collection_propfind_response(uname, col, requested_tags)]
         if depth != "0":
             for item in storage.list_items(uname, slug):
-                responses.append(_item_propfind_response(uname, slug, item))
+                responses.append(_item_propfind_response(uname, slug, item, requested_tags))
         res_xml = _multistatus(*responses)
         print(f"[DEBUG DAV] PROPFIND Collection Response: {res_xml}")
         return _xml_response(res_xml)
@@ -278,7 +309,7 @@ async def dav_propfind(path: str, request: Request) -> Response:
         if item is None:
             print(f"[DEBUG DAV] PROPFIND Item Not Found")
             return Response(status_code=404, headers={"DAV": DAV_HEADER})
-        res_xml = _multistatus(_item_propfind_response(uname, slug, item))
+        res_xml = _multistatus(_item_propfind_response(uname, slug, item, requested_tags))
         print(f"[DEBUG DAV] PROPFIND Item Response: {res_xml}")
         return _xml_response(res_xml)
 
@@ -286,7 +317,7 @@ async def dav_propfind(path: str, request: Request) -> Response:
     return Response(status_code=404, headers={"DAV": DAV_HEADER})
 
 
-def _collection_propfind_response(username: str, col: storage.CollectionMeta) -> ET.Element:
+def _collection_propfind_response(username: str, col: storage.CollectionMeta, requested_tags: list[str] | None = None) -> ET.Element:
     rt = _collection_resourcetype(col.collection_type)
     props = {
         _ns("D", "resourcetype"): rt,
@@ -302,18 +333,31 @@ def _collection_propfind_response(username: str, col: storage.CollectionMeta) ->
         ]
     else:
         props[_ns("CR", "addressbook-description")] = col.description
-    return _propfind_response(f"/dav/{username}/{col.slug}/", props)
+
+    missing = []
+    if requested_tags:
+        for tag in requested_tags:
+            if tag not in props:
+                missing.append(tag)
+
+    return _propfind_response(f"/dav/{username}/{col.slug}/", props, missing)
 
 
-def _item_propfind_response(username: str, slug: str, item: storage.Item) -> ET.Element:
+def _item_propfind_response(username: str, slug: str, item: storage.Item, requested_tags: list[str] | None = None) -> ET.Element:
     props = {
         _ns("D", "getetag"): f'"{item.etag}"',
         _ns("D", "getcontenttype"): (
             "text/calendar; charset=utf-8" if item.filename.endswith(".ics")
             else "text/vcard; charset=utf-8"
         ),
+        _ns("D", "getcontentlength"): str(len(item.content)),
     }
-    return _propfind_response(f"/dav/{username}/{slug}/{item.filename}", props)
+    missing = []
+    if requested_tags:
+        for tag in requested_tags:
+            if tag not in props:
+                missing.append(tag)
+    return _propfind_response(f"/dav/{username}/{slug}/{item.filename}", props, missing)
 
 
 # GET / HEAD — retrieve item
