@@ -34,6 +34,9 @@ NS = {
     "ICAL": "http://apple.com/ns/ical/",
 }
 
+for prefix, uri in NS.items():
+    ET.register_namespace(prefix, uri)
+
 
 def _ns(prefix: str, tag: str) -> str:
     return f"{{{NS[prefix]}}}{tag}"
@@ -201,6 +204,19 @@ async def dav_propfind(path: str, request: Request) -> Response:
              _ns("D", "displayname"): "Kayendar",
              _ns("D", "current-user-principal"): user_principal},
         )]
+        if depth != "0":
+            cal_home = ET.Element(_ns("D", "href"))
+            cal_home.text = user_principal
+            card_home = ET.Element(_ns("D", "href"))
+            card_home.text = user_principal
+            responses.append(_propfind_response(
+                user_principal,
+                {_ns("D", "resourcetype"): _principal_resourcetype(),
+                 _ns("D", "displayname"): username,
+                 _ns("D", "current-user-principal"): user_principal,
+                 _ns("C", "calendar-home-set"): cal_home,
+                 _ns("CR", "addressbook-home-set"): card_home},
+            ))
         return _xml_response(_multistatus(*responses))
 
     # --- principal (username) ---
