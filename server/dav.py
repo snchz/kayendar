@@ -181,14 +181,17 @@ async def dav_options(path: str, request: Request) -> Response:
 # PROPFIND — property discovery
 @router.api_route("/{path:path}", methods=["PROPFIND"])
 async def dav_propfind(path: str, request: Request) -> Response:
+    body_bytes = await request.body()
+    body_str = body_bytes.decode("utf-8", errors="ignore")
+    print(f"[DEBUG DAV] PROPFIND path='{path}' depth='{request.headers.get('Depth')}' body='{body_str}'")
+
     username, err = _require_auth(request)
     if err:
+        print("[DEBUG DAV] PROPFIND Authentication Failed")
         return err
 
     depth = _parse_depth(request)
     parts = [p for p in path.strip("/").split("/") if p]
-    # parts: [] = root, [username] = principal, [username, slug] = collection,
-    #              [username, slug, filename] = item
 
     # --- root ---
     if not parts:
@@ -212,12 +215,15 @@ async def dav_propfind(path: str, request: Request) -> Response:
                  _ns("C", "calendar-home-set"): cal_home,
                  _ns("CR", "addressbook-home-set"): card_home},
             ))
-        return _xml_response(_multistatus(*responses))
+        res_xml = _multistatus(*responses)
+        print(f"[DEBUG DAV] PROPFIND Root Response: {res_xml}")
+        return _xml_response(res_xml)
 
     # --- principal (username) ---
     if len(parts) == 1:
         uname = parts[0]
         if uname != username:
+            print(f"[DEBUG DAV] PROPFIND Principal Forbidden: uname={uname} username={username}")
             return Response(status_code=403, headers={"DAV": DAV_HEADER})
         
         cal_home = ET.Element(_ns("D", "href"))
@@ -237,32 +243,43 @@ async def dav_propfind(path: str, request: Request) -> Response:
         if depth != "0":
             for col in storage.list_collections(uname):
                 responses.append(_collection_propfind_response(uname, col))
-        return _xml_response(_multistatus(*responses))
+        res_xml = _multistatus(*responses)
+        print(f"[DEBUG DAV] PROPFIND Principal Response: {res_xml}")
+        return _xml_response(res_xml)
 
     # --- collection ---
     if len(parts) == 2:
         uname, slug = parts
         if uname != username:
+            print(f"[DEBUG DAV] PROPFIND Collection Forbidden: uname={uname} username={username}")
             return Response(status_code=403, headers={"DAV": DAV_HEADER})
         col = storage.get_collection(uname, slug)
         if col is None:
+            print(f"[DEBUG DAV] PROPFIND Collection Not Found: slug={slug}")
             return Response(status_code=404, headers={"DAV": DAV_HEADER})
         responses = [_collection_propfind_response(uname, col)]
         if depth != "0":
             for item in storage.list_items(uname, slug):
                 responses.append(_item_propfind_response(uname, slug, item))
-        return _xml_response(_multistatus(*responses))
+        res_xml = _multistatus(*responses)
+        print(f"[DEBUG DAV] PROPFIND Collection Response: {res_xml}")
+        return _xml_response(res_xml)
 
     # --- item ---
     if len(parts) == 3:
         uname, slug, filename = parts
         if uname != username:
+            print(f"[DEBUG DAV] PROPFIND Item Forbidden")
             return Response(status_code=403, headers={"DAV": DAV_HEADER})
         item = storage.get_item(uname, slug, filename)
         if item is None:
+            print(f"[DEBUG DAV] PROPFIND Item Not Found")
             return Response(status_code=404, headers={"DAV": DAV_HEADER})
-        return _xml_response(_multistatus(_item_propfind_response(uname, slug, item)))
+        res_xml = _multistatus(_item_propfind_response(uname, slug, item))
+        print(f"[DEBUG DAV] PROPFIND Item Response: {res_xml}")
+        return _xml_response(res_xml)
 
+    print(f"[DEBUG DAV] PROPFIND 404: path='{path}'")
     return Response(status_code=404, headers={"DAV": DAV_HEADER})
 
 
