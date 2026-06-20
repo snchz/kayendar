@@ -1,0 +1,15 @@
+{
+    "test_special_user": {
+        "salt": "dfa0e4847e284afc9785a59647231d61",
+        "hash": "eb1b05be714dbb95a7327ba123b918ae2fddc3ecb37d05c70a29cfeb823bd27c",
+        "iterations": 100000,
+        "algo": "pbkdf2_sha256"
+    },
+    "testuser_320qjb": {
+        "salt": "e25b6db0b597d83a2670192a6d6de314",
+        "hash": "ba6b12fea3dc22d3d17eae4b7ef16059582d76599ee9acccb69c4395c7929785",
+        "iterations": 100000,
+        "algo": "pbkdf2_sha256",
+        "email": "testuser_320qjb@example.com"
+    }
+}

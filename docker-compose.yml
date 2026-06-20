@@ -18,6 +18,8 @@ services:
       # Initial Admin User configuration (Auto-provisioned on startup if database is empty)
       # KAYENDAR_ADMIN_USER: "admin"
       # KAYENDAR_ADMIN_PASSWORD: "change-me-to-a-secure-password"
+      # Verbose debug logs for CalDAV/CardDAV requests (default: false)
+      KAYENDAR_LOG_DEBUG: "false"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/dav/', method='OPTIONS')"]
       interval: 30s
