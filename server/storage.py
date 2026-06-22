@@ -50,7 +50,7 @@ def _collections_root() -> str:
 # Path helpers
 # ---------------------------------------------------------------------------
 
-_SLUG_RE = re.compile(r"^[a-zA-Z0-9_\-]{1,64}$")
+_SLUG_RE = re.compile(r"^[a-zA-Z0-9_\-\.\s%!@#$&'()+,;=\[\]]{1,128}$")
 _UID_RE = re.compile(r"^[a-zA-Z0-9_\-\.@]{1,128}$")
 
 _lock = threading.Lock()
@@ -80,14 +80,18 @@ def _item_path(username: str, slug: str, filename: str) -> str:
 
 
 def _validate_slug(slug: str) -> None:
-    if not _SLUG_RE.match(slug):
-        raise ValueError(f"Invalid collection slug: {slug!r}")
+    if not slug or len(slug) > 128:
+        raise ValueError(f"Invalid collection slug length: {slug!r}")
     if slug.startswith("."):
         raise ValueError("Slug cannot start with a dot")
+    if ".." in slug or "/" in slug or "\\" in slug:
+        raise ValueError("Slug cannot contain traversal characters")
+    if not _SLUG_RE.match(slug):
+        raise ValueError(f"Invalid collection slug: {slug!r}")
 
 
 def _validate_filename(filename: str) -> None:
-    if "/" in filename or "\\" in filename or filename.startswith("."):
+    if "/" in filename or "\\" in filename or filename.startswith(".") or ".." in filename:
         raise ValueError(f"Invalid filename: {filename!r}")
     if not (filename.endswith(".ics") or filename.endswith(".vcf")):
         raise ValueError("Item filename must end in .ics or .vcf")
@@ -109,14 +113,18 @@ class CollectionMeta:
     color: str
     collection_type: str  # "calendar" | "addressbook"
     description: str = ""
+    ctag: int = 1
 
     def as_dict(self) -> dict:
         return {
             "slug": self.slug,
+            "id": self.slug,
             "display_name": self.display_name,
+            "title": self.display_name,
             "color": self.color,
             "type": self.collection_type,
             "description": self.description,
+            "ctag": self.ctag,
         }
 
     @classmethod
@@ -127,6 +135,7 @@ class CollectionMeta:
             color=data.get("color", DEFAULT_CALENDAR_COLOR),
             collection_type=data.get("type", "calendar"),
             description=data.get("description", ""),
+            ctag=data.get("ctag", 1),
         )
 
 
@@ -191,10 +200,12 @@ def create_collection(
     if color is None:
         color = DEFAULT_CALENDAR_COLOR if collection_type == "calendar" else DEFAULT_ADDRESSBOOK_COLOR
 
-    if slug is None:
+    if slug is not None:
+        _validate_slug(slug)
+    else:
         slug = _safe_slug(display_name)
 
-    # Ensure uniqueness
+    # Ensure uniqueness by auto-renaming
     base_slug = slug
     counter = 1
     with _lock:
@@ -267,21 +278,170 @@ def _etag(content: str) -> str:
     return _hashlib.md5(content.encode("utf-8")).hexdigest()
 
 
-def list_items(username: str, slug: str) -> List[Item]:
-    """Return all items in a collection."""
+# ETag Caching helpers
+def _get_cache_path(username: str, slug: str) -> str:
+    return os.path.join(_collection_dir(username, slug), ".cache.json")
+
+
+def _load_cache(username: str, slug: str) -> dict:
+    path = _get_cache_path(username, slug)
+    if not os.path.isfile(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _write_cache(username: str, slug: str, cache: dict) -> None:
+    path = _get_cache_path(username, slug)
+    tmp = path + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(cache, f, indent=2)
+        os.replace(tmp, path)
+    except Exception:
+        pass
+
+
+@dataclass
+class ItemMeta:
+    filename: str
+    etag: str
+    size: int
+
+
+def list_items_meta(username: str, slug: str) -> List[ItemMeta]:
+    """Return only metadata (filename, etag, size) for all items, utilizing cache."""
     _validate_slug(slug)
     col_dir = _collection_dir(username, slug)
     if not os.path.isdir(col_dir):
         return []
+    cache = _load_cache(username, slug)
+    cache_changed = False
     items = []
     for entry in sorted(os.scandir(col_dir), key=lambda e: e.name):
         if entry.is_file() and (entry.name.endswith(".ics") or entry.name.endswith(".vcf")):
             try:
-                with open(entry.path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                items.append(Item(filename=entry.name, content=content, etag=_etag(content)))
+                stat = entry.stat()
+                mtime = stat.st_mtime
+                size = stat.st_size
+                cached = cache.get(entry.name)
+                if cached and cached.get("mtime") == mtime and cached.get("size") == size:
+                    etag = cached["etag"]
+                else:
+                    with open(entry.path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    etag = _etag(content)
+                    cache[entry.name] = {
+                        "etag": etag,
+                        "size": size,
+                        "mtime": mtime
+                    }
+                    cache_changed = True
+                items.append(ItemMeta(filename=entry.name, etag=etag, size=size))
             except Exception:
                 pass
+    if cache_changed:
+        _write_cache(username, slug, cache)
+    return items
+
+
+def _validate_ics(content: str) -> None:
+    lines = [line.strip() for line in content.splitlines() if line.strip()]
+    if not lines:
+        raise ValueError("Empty ICS content")
+    if not any(line.startswith("BEGIN:VCALENDAR") for line in lines):
+        raise ValueError("Missing BEGIN:VCALENDAR")
+    if not any(line.startswith("END:VCALENDAR") for line in lines):
+        raise ValueError("Missing END:VCALENDAR")
+    
+    has_component = False
+    in_event = False
+    in_todo = False
+    for line in lines:
+        if line.startswith("BEGIN:VEVENT"):
+            in_event = True
+        elif line.startswith("END:VEVENT"):
+            if not in_event:
+                raise ValueError("END:VEVENT without BEGIN:VEVENT")
+            in_event = False
+            has_component = True
+        elif line.startswith("BEGIN:VTODO"):
+            in_todo = True
+        elif line.startswith("END:VTODO"):
+            if not in_todo:
+                raise ValueError("END:VTODO without BEGIN:VTODO")
+            in_todo = False
+            has_component = True
+            
+    if in_event or in_todo:
+        raise ValueError("Unclosed VEVENT or VTODO component")
+    if not has_component:
+        raise ValueError("Missing VEVENT or VTODO component")
+
+
+def _validate_vcf(content: str) -> None:
+    lines = [line.strip() for line in content.splitlines() if line.strip()]
+    if not lines:
+        raise ValueError("Empty VCF content")
+    if not any(line.startswith("BEGIN:VCARD") for line in lines):
+        raise ValueError("Missing BEGIN:VCARD")
+    if not any(line.startswith("END:VCARD") for line in lines):
+        raise ValueError("Missing END:VCARD")
+        
+    in_vcard = False
+    has_fn = False
+    for line in lines:
+        if line.startswith("BEGIN:VCARD"):
+            in_vcard = True
+        elif line.startswith("END:VCARD"):
+            if not in_vcard:
+                raise ValueError("END:VCARD without BEGIN:VCARD")
+            in_vcard = False
+        elif line.startswith("FN:") or line.startswith("FN;"):
+            has_fn = True
+            
+    if in_vcard:
+        raise ValueError("Unclosed VCARD")
+    if not has_fn:
+        raise ValueError("Missing FN (Formatted Name) property")
+
+
+def list_items(username: str, slug: str) -> List[Item]:
+    """Return all items in a collection, utilizing cache for ETags."""
+    _validate_slug(slug)
+    col_dir = _collection_dir(username, slug)
+    if not os.path.isdir(col_dir):
+        return []
+    cache = _load_cache(username, slug)
+    cache_changed = False
+    items = []
+    for entry in sorted(os.scandir(col_dir), key=lambda e: e.name):
+        if entry.is_file() and (entry.name.endswith(".ics") or entry.name.endswith(".vcf")):
+            try:
+                stat = entry.stat()
+                mtime = stat.st_mtime
+                size = stat.st_size
+                with open(entry.path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                cached = cache.get(entry.name)
+                if cached and cached.get("mtime") == mtime and cached.get("size") == size:
+                    etag = cached["etag"]
+                else:
+                    etag = _etag(content)
+                    cache[entry.name] = {
+                        "etag": etag,
+                        "size": size,
+                        "mtime": mtime
+                    }
+                    cache_changed = True
+                items.append(Item(filename=entry.name, content=content, etag=etag))
+            except Exception:
+                pass
+    if cache_changed:
+        _write_cache(username, slug, cache)
     return items
 
 
@@ -301,6 +461,13 @@ def put_item(username: str, slug: str, filename: str, content: str) -> Item:
     """Create or update an item. Collection must exist."""
     _validate_slug(slug)
     _validate_filename(filename)
+    
+    # Validate content
+    if filename.endswith(".ics"):
+        _validate_ics(content)
+    elif filename.endswith(".vcf"):
+        _validate_vcf(content)
+        
     col_dir = _collection_dir(username, slug)
     if not os.path.isdir(col_dir):
         raise FileNotFoundError(f"Collection {slug!r} not found for user {username!r}")
@@ -310,6 +477,13 @@ def put_item(username: str, slug: str, filename: str, content: str) -> Item:
         with open(tmp, "w", encoding="utf-8") as f:
             f.write(content)
         os.replace(tmp, path)
+        
+        # Increment CTag
+        meta = _read_meta(username, slug)
+        if meta:
+            meta.ctag += 1
+            _write_meta(username, meta)
+            
     return Item(filename=filename, content=content, etag=_etag(content))
 
 
@@ -321,6 +495,13 @@ def delete_item(username: str, slug: str, filename: str) -> bool:
     with _lock:
         if os.path.isfile(path):
             os.remove(path)
+            
+            # Increment CTag
+            meta = _read_meta(username, slug)
+            if meta:
+                meta.ctag += 1
+                _write_meta(username, meta)
+                
             return True
     return False
 
@@ -360,15 +541,8 @@ def delete_user_data(username: str) -> None:
 
 
 def get_collection_ctag(username: str, slug: str) -> str:
-    """Calculate a dynamic CTag for a collection based on directory and file modification times."""
-    col_dir = _collection_dir(username, slug)
-    if not os.path.isdir(col_dir):
-        return "0"
-    try:
-        mtimes = [os.path.getmtime(col_dir)]
-        for entry in os.scandir(col_dir):
-            if entry.is_file():
-                mtimes.append(entry.stat().st_mtime)
-        return str(int(sum(mtimes)))
-    except Exception:
-        return "1"
+    """Retrieve CTag directly from collection meta."""
+    meta = _read_meta(username, slug)
+    if meta:
+        return str(meta.ctag)
+    return "0"

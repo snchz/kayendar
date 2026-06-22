@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import uuid
+import re
 from typing import Optional
 
 from fastapi import APIRouter, Cookie, Form, Request, Response
@@ -20,6 +21,11 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from . import auth, storage
 
 router = APIRouter(prefix="/api")
+
+def _validate_color(color: str) -> bool:
+    if not isinstance(color, str):
+        return False
+    return bool(re.match(r"^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$", color))
 
 # ---------------------------------------------------------------------------
 # Session helpers
@@ -140,18 +146,31 @@ async def create_collection(request: Request) -> JSONResponse:
     except Exception:
         return _json_error(400, "Invalid JSON")
 
-    display_name = body.get("display_name", "").strip()
-    col_type = body.get("type", "calendar")
-    color = body.get("color")
-    description = body.get("description", "")
+    body_display_name = body.get("display_name")
+    if body_display_name is not None:
+        display_name = body_display_name.strip()
+        slug = body.get("slug")
+    else:
+        title = body.get("title")
+        val_id = body.get("id")
+        if title is None or val_id is None:
+            return _json_error(400, "title and id/slug are required")
+        display_name = str(title).strip()
+        slug = str(val_id).strip()
 
-    if not display_name:
-        return _json_error(400, "display_name is required")
+    col_type = body.get("type")
+    if not col_type:
+        return _json_error(400, "type is required")
     if col_type not in storage.COLLECTION_TYPES:
         return _json_error(400, f"type must be one of {list(storage.COLLECTION_TYPES)}")
 
+    color = body.get("color")
+    if color is not None and not _validate_color(color):
+        return _json_error(400, "Invalid color format")
+    description = body.get("description", "")
+
     try:
-        col = storage.create_collection(user, display_name, col_type, color, description)
+        col = storage.create_collection(user, display_name, col_type, color, description, slug=slug)
     except ValueError as e:
         return _json_error(400, str(e))
     return JSONResponse(col.as_dict(), status_code=201)
@@ -169,6 +188,7 @@ async def get_collection(slug: str, request: Request) -> JSONResponse:
 
 
 @router.patch("/collections/{slug}")
+@router.put("/collections/{slug}")
 async def update_collection(slug: str, request: Request) -> JSONResponse:
     user = _get_current_user(request)
     if not user:
@@ -178,11 +198,21 @@ async def update_collection(slug: str, request: Request) -> JSONResponse:
     except Exception:
         return _json_error(400, "Invalid JSON")
 
+    display_name = body.get("display_name") or body.get("title")
+    if display_name is not None:
+        display_name = display_name.strip()
+        if not display_name:
+            return _json_error(400, "title/display_name cannot be empty")
+
+    color = body.get("color")
+    if color is not None and not _validate_color(color):
+        return _json_error(400, "Invalid color format")
+
     col = storage.update_collection(
         user,
         slug,
-        display_name=body.get("display_name"),
-        color=body.get("color"),
+        display_name=display_name,
+        color=color,
         description=body.get("description"),
     )
     if col is None:
@@ -244,8 +274,10 @@ async def put_item(slug: str, filename: str, request: Request) -> JSONResponse:
 
     try:
         item = storage.put_item(user, slug, filename, content)
-    except (FileNotFoundError, ValueError) as e:
+    except FileNotFoundError as e:
         return _json_error(409, str(e))
+    except ValueError as e:
+        return _json_error(400, str(e))
 
     return JSONResponse({"filename": item.filename, "etag": item.etag}, status_code=201)
 
@@ -259,3 +291,35 @@ async def delete_item(slug: str, filename: str, request: Request) -> JSONRespons
     if not deleted:
         return _json_error(404, "Item not found")
     return JSONResponse({"ok": True})
+
+
+@router.get("/dashboard/stats")
+async def get_dashboard_stats(request: Request) -> JSONResponse:
+    user = _get_current_user(request)
+    if not user:
+        return _json_error(401, "Not authenticated")
+    
+    cols = storage.list_collections(user)
+    
+    events_count = 0
+    contacts_count = 0
+    collections_count = 0
+    
+    for col in cols:
+        items = storage.list_items(user, col.slug)
+        items_count = len(items)
+        if col.collection_type == "calendar":
+            events_count += items_count
+        elif col.collection_type == "addressbook":
+            contacts_count += items_count
+            
+        # Count the collection in stats if it's not one of the default empty collections
+        if col.slug not in ("personal", "contacts") or items_count > 0:
+            collections_count += 1
+            
+    return JSONResponse({
+        "collections_count": collections_count,
+        "events_count": events_count,
+        "contacts_count": contacts_count
+    })
+

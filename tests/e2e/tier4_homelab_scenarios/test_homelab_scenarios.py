@@ -521,8 +521,8 @@ END:VCARD"""
     cal_user_dir = data_dir / "collections" / username
     con_user_dir = data_dir / "collections" / username
     
-    shutil.copytree(cal_user_dir, backup_dir / "collections" / username)
-    shutil.copytree(con_user_dir, backup_dir / "collections" / username)
+    shutil.copytree(cal_user_dir, backup_dir / "collections" / username, dirs_exist_ok=True)
+    shutil.copytree(con_user_dir, backup_dir / "collections" / username, dirs_exist_ok=True)
     
     # 4. Simulate a disaster (delete user from users.json and their directories)
     # Perform user record cleanup
@@ -549,8 +549,8 @@ END:VCARD"""
     shutil.copy2(backup_dir / "users.json", users_json)
     
     # Restore directories
-    shutil.copytree(backup_dir / "collections" / username, cal_user_dir)
-    shutil.copytree(backup_dir / "collections" / username, con_user_dir)
+    shutil.copytree(backup_dir / "collections" / username, cal_user_dir, dirs_exist_ok=True)
+    shutil.copytree(backup_dir / "collections" / username, con_user_dir, dirs_exist_ok=True)
     
     # 6. Verify restored resources are accessible
     options_resp2 = dav_session.options(f"{server_url}/dav/")

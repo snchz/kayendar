@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -55,14 +55,42 @@ def create_app() -> FastAPI:
     if STATIC_DIR.exists():
         app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
 
-    # SPA catch-all — serve index.html for all non-API, non-DAV routes
-    @app.get("/", response_model=None)
-    @app.get("/{full_path:path}", response_model=None)
-    async def spa(full_path: str = ""):
+    # Path traversal block middleware
+    @app.middleware("http")
+    async def block_traversal(request: Request, call_next):
+        from urllib.parse import unquote
+        from fastapi.responses import Response
+        path = unquote(request.url.path)
+        if ".." in path or "\\" in path:
+            return Response(status_code=400, content="Directory traversal attempt detected.")
+        return await call_next(request)
+
+    @app.api_route("/", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD", "REPORT", "PROPFIND", "MKCOL", "MKCALENDAR"])
+    async def spa_root(request: Request):
+        if request.method not in ("GET", "HEAD"):
+            from fastapi.responses import Response
+            return Response(status_code=404)
+        index = STATIC_DIR / "index.html"
+        if index.exists():
+            return FileResponse(str(index))
+        return HTMLResponse("<h1>Kayendar</h1><p>Static files not found.</p>")
+
+    @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD", "REPORT", "PROPFIND", "MKCOL", "MKCALENDAR"])
+    async def spa(request: Request, full_path: str):
         # Don't intercept API or DAV routes
         if full_path.startswith("api/") or full_path.startswith("dav/"):
             from fastapi.responses import Response
             return Response(status_code=404)
+
+        if request.method not in ("GET", "HEAD"):
+            from fastapi.responses import Response
+            return Response(status_code=404)
+
+        basename = os.path.basename(full_path)
+        if "." in basename and basename != "index.html":
+            from fastapi.responses import Response
+            return Response(status_code=404)
+
         index = STATIC_DIR / "index.html"
         if index.exists():
             return FileResponse(str(index))

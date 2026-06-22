@@ -68,12 +68,24 @@ ALLOW_HEADER = "OPTIONS, PROPFIND, REPORT, GET, HEAD, PUT, DELETE, MKCOL, MKCALE
 def _authenticate(request: Request) -> Optional[str]:
     """Return username if Basic Auth credentials are valid, else None."""
     auth_header = request.headers.get("Authorization", "")
-    if not auth_header.lower().startswith("basic "):
+    if auth_header.lower().startswith("basic "):
+        try:
+            decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
+            username, _, password = decoded.partition(":")
+            if auth.verify_user(username, password):
+                # Ensure default collections exist for WebDAV clients
+                storage.ensure_default_collections(username)
+                return username
+        except Exception:
+            pass
         return None
+
+    # Fallback to session cookie authentication for SPA accessing DAV endpoints
+    from .web import _get_current_user
     try:
-        decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
-        username, _, password = decoded.partition(":")
-        if auth.verify_user(username, password):
+        username = _get_current_user(request)
+        if username:
+            storage.ensure_default_collections(username)
             return username
     except Exception:
         pass
@@ -187,6 +199,9 @@ def _parse_depth(request: Request) -> str:
 # OPTIONS — discovery
 @router.options("/{path:path}")
 async def dav_options(path: str, request: Request) -> Response:
+    username, err = _require_auth(request)
+    if err:
+        return err
     return Response(
         status_code=200,
         headers={
@@ -438,8 +453,10 @@ async def dav_put(path: str, request: Request) -> Response:
 
     try:
         item = storage.put_item(uname, slug, filename, content)
-    except (FileNotFoundError, ValueError) as exc:
+    except FileNotFoundError as exc:
         return Response(status_code=409, content=str(exc), headers={"DAV": DAV_HEADER})
+    except ValueError as exc:
+        return Response(status_code=400, content=str(exc), headers={"DAV": DAV_HEADER})
 
     return Response(
         status_code=201,
@@ -487,6 +504,10 @@ async def dav_mkcol(path: str, request: Request) -> Response:
     uname, slug = parts
     if uname != username:
         return Response(status_code=403, headers={"DAV": DAV_HEADER})
+
+    # Fail if collection already exists at the requested path
+    if storage.get_collection(uname, slug) is not None:
+        return Response(status_code=405, headers={"DAV": DAV_HEADER})
 
     col_type = "calendar" if request.method == "MKCALENDAR" else "addressbook"
     display_name = slug

@@ -79,7 +79,7 @@ def test_items_crud():
 
 def test_put_item_missing_collection():
     with pytest.raises(FileNotFoundError):
-        storage.put_item("alice", "missing", "event.ics", "BEGIN:VCALENDAR\nEND:VCALENDAR")
+        storage.put_item("alice", "missing", "event.ics", "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:test\nEND:VEVENT\nEND:VCALENDAR")
 
 
 def test_invalid_filename_rejected():
@@ -92,7 +92,7 @@ def test_invalid_filename_rejected():
 
 def test_list_items_skips_non_conforming_files(tmp_path):
     storage.create_collection("grace", "Personal", "calendar", slug="personal")
-    storage.put_item("grace", "personal", "valid.ics", "BEGIN:VCALENDAR\nEND:VCALENDAR")
+    storage.put_item("grace", "personal", "valid.ics", "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:test\nEND:VEVENT\nEND:VCALENDAR")
 
     col_dir = tmp_path / "collections" / "grace" / "personal"
     (col_dir / "README.txt").write_text("notes", encoding="utf-8")
@@ -109,15 +109,18 @@ def test_atomic_writes(monkeypatch):
     replace_calls = []
 
     def mock_replace(src, dst):
+        if dst.endswith(".meta.json"):
+            original_replace(src, dst)
+            return
         assert dst.endswith("test.ics")
         assert ".tmp" in src
         with open(src, encoding="utf-8") as f:
-            assert f.read() == "BEGIN:VCALENDAR\nEND:VCALENDAR"
+            assert f.read() == "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:test\nEND:VEVENT\nEND:VCALENDAR"
         replace_calls.append((src, dst))
         original_replace(src, dst)
 
     monkeypatch.setattr(os, "replace", mock_replace)
-    storage.put_item("atomic", "personal", "test.ics", "BEGIN:VCALENDAR\nEND:VCALENDAR")
+    storage.put_item("atomic", "personal", "test.ics", "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:test\nEND:VEVENT\nEND:VCALENDAR")
     assert len(replace_calls) == 1
 
 
