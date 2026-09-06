@@ -1,11 +1,14 @@
-import os
-import json
+import contextlib
 import hashlib
 import hmac
-import threading
+import json
+import os
 import re
 import sys
-import contextlib
+import threading
+import time
+
+from .config import settings
 
 try:
     import portalocker
@@ -19,7 +22,7 @@ USER_DB_PATH = None
 def _get_db_path() -> str:
     if USER_DB_PATH is not None:
         return USER_DB_PATH
-    return os.path.join(os.environ.get("KAYENDAR_DATA_DIR", "data"), "users.json")
+    return str(settings.users_db_path)
 
 
 @contextlib.contextmanager
@@ -28,8 +31,7 @@ def _lock_db_file(db_path: str):
     db_dir = os.path.dirname(lock_path)
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
-        
-    import time
+
     attempts = 10
     sleep_time = 0.05
     lf = None
@@ -38,7 +40,7 @@ def _lock_db_file(db_path: str):
 
     for attempt in range(attempts):
         try:
-            lf = open(lock_path, "w")
+            lf = open(lock_path, "a+")
             if portalocker is not None:
                 portalocker.lock(lf, portalocker.LOCK_EX)
             elif sys.platform.startswith("win"):

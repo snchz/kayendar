@@ -58,3 +58,85 @@ def test_spa_crud_collection(server_url, spa_session):
 
     delete_response = spa_session.delete(f"{server_url}/api/collections/{slug}")
     assert delete_response.status_code == 200
+
+
+@pytest.mark.tier1
+def test_spa_export_import_collection(server_url, spa_session):
+    """Test 1-click export and import of .ics collections."""
+    # Create a test calendar
+    c_res = spa_session.post(f"{server_url}/api/collections", json={"display_name": "Export Test", "type": "calendar"})
+    assert c_res.status_code == 201
+    slug = c_res.json()["slug"]
+
+    # Put an event
+    ev_ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:export-ev-1\r\nSUMMARY:Test Export\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    put_res = spa_session.put(f"{server_url}/api/collections/{slug}/items/export-ev-1.ics", json={"content": ev_ics})
+    assert put_res.status_code in (200, 201)
+
+    # Export
+    exp_res = spa_session.get(f"{server_url}/api/collections/{slug}/export")
+    assert exp_res.status_code == 200
+    assert "text/calendar" in exp_res.headers.get("Content-Type", "")
+    assert "Test Export" in exp_res.text
+
+    # Create target calendar to import into
+    c2_res = spa_session.post(f"{server_url}/api/collections", json={"display_name": "Import Test", "type": "calendar"})
+    assert c2_res.status_code == 201
+    slug2 = c2_res.json()["slug"]
+
+    # Import
+    imp_res = spa_session.post(
+        f"{server_url}/api/collections/{slug2}/import",
+        data=exp_res.text.encode("utf-8"),
+        headers={"Content-Type": "text/calendar; charset=utf-8"},
+    )
+    assert imp_res.status_code == 200
+    assert imp_res.json()["imported"] >= 1
+
+    # Verify items in target calendar
+    items_res = spa_session.get(f"{server_url}/api/collections/{slug2}/items")
+    assert items_res.status_code == 200
+    assert any(i["filename"] == "export-ev-1.ics" for i in items_res.json())
+
+    # Cleanup
+    spa_session.delete(f"{server_url}/api/collections/{slug}")
+    spa_session.delete(f"{server_url}/api/collections/{slug2}")
+
+
+@pytest.mark.tier1
+def test_spa_collection_sharing_public_feed(server_url, spa_session):
+    """Test public read-only share link generation and anonymous feed fetching."""
+    # Create calendar
+    c_res = spa_session.post(f"{server_url}/api/collections", json={"display_name": "Share Test", "type": "calendar"})
+    assert c_res.status_code == 201
+    slug = c_res.json()["slug"]
+
+    # Put an event
+    ev_ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:share-ev-1\r\nSUMMARY:Public Shared Event\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    spa_session.put(f"{server_url}/api/collections/{slug}/items/share-ev-1.ics", json={"content": ev_ics})
+
+    # Create share link
+    share_res = spa_session.post(f"{server_url}/api/collections/{slug}/share", json={})
+    assert share_res.status_code == 200
+    share_data = share_res.json()
+    assert share_data["shared"] is True
+    token = share_data["token"]
+    feed_url = share_data["url"]
+
+    # Fetch feed anonymously without cookies/auth
+    anon_res = requests.get(f"{server_url}{feed_url}")
+    assert anon_res.status_code == 200
+    assert "text/calendar" in anon_res.headers.get("Content-Type", "")
+    assert "Public Shared Event" in anon_res.text
+
+    # Revoke share
+    del_res = spa_session.delete(f"{server_url}/api/collections/{slug}/share")
+    assert del_res.status_code == 200
+
+    # Feed should now return 404
+    anon_after = requests.get(f"{server_url}{feed_url}")
+    assert anon_after.status_code == 404
+
+    # Cleanup
+    spa_session.delete(f"{server_url}/api/collections/{slug}")
+

@@ -11,7 +11,9 @@ Supported methods:
 
 from __future__ import annotations
 
+import asyncio
 import base64
+import logging
 import os
 import textwrap
 import xml.etree.ElementTree as ET
@@ -22,14 +24,14 @@ from fastapi import APIRouter, Request, Response
 from fastapi.responses import PlainTextResponse
 
 from . import auth, storage
+from .config import settings
 
-# Read environment variable to control logging (defaulting to False)
-LOG_DEBUG = os.environ.get("KAYENDAR_LOG_DEBUG", "false").lower() in ("true", "1", "yes")
+logger = logging.getLogger("kayendar.dav")
 
 
 def _log_debug(msg: str) -> None:
-    if LOG_DEBUG:
-        print(msg)
+    if settings.log_debug:
+        logger.debug(msg)
 
 # ---------------------------------------------------------------------------
 # Namespace map
@@ -65,14 +67,14 @@ ALLOW_HEADER = "OPTIONS, PROPFIND, REPORT, GET, HEAD, PUT, DELETE, MKCOL, MKCALE
 # Authentication helper
 # ---------------------------------------------------------------------------
 
-def _authenticate(request: Request) -> Optional[str]:
+async def _authenticate(request: Request) -> Optional[str]:
     """Return username if Basic Auth credentials are valid, else None."""
     auth_header = request.headers.get("Authorization", "")
     if auth_header.lower().startswith("basic "):
         try:
             decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
             username, _, password = decoded.partition(":")
-            if auth.verify_user(username, password):
+            if await asyncio.to_thread(auth.verify_user, username, password):
                 # Ensure default collections exist for WebDAV clients
                 storage.ensure_default_collections(username)
                 return username
@@ -92,8 +94,8 @@ def _authenticate(request: Request) -> Optional[str]:
     return None
 
 
-def _require_auth(request: Request) -> Tuple[Optional[str], Optional[Response]]:
-    username = _authenticate(request)
+async def _require_auth(request: Request) -> Tuple[Optional[str], Optional[Response]]:
+    username = await _authenticate(request)
     if username is None:
         return None, Response(
             status_code=401,
@@ -199,7 +201,7 @@ def _parse_depth(request: Request) -> str:
 # OPTIONS — discovery
 @router.options("/{path:path}")
 async def dav_options(path: str, request: Request) -> Response:
-    username, err = _require_auth(request)
+    username, err = await _require_auth(request)
     if err:
         return err
     return Response(
@@ -226,7 +228,7 @@ def _parse_requested_props(body_str: str) -> list[str]:
         if prop_el is not None:
             return [child.tag for child in prop_el]
     except Exception as e:
-        print(f"Error parsing PROPFIND XML: {e}")
+        logger.warning("Error parsing PROPFIND XML: %s", e)
     return []
 
 
@@ -246,7 +248,7 @@ async def dav_propfind(path: str, request: Request) -> Response:
     body_str = body_bytes.decode("utf-8", errors="ignore")
     _log_debug(f"[DEBUG DAV] PROPFIND path='{path}' depth='{request.headers.get('Depth')}' body='{body_str}'")
 
-    username, err = _require_auth(request)
+    username, err = await _require_auth(request)
     if err:
         _log_debug("[DEBUG DAV] PROPFIND Authentication Failed")
         return err
@@ -399,7 +401,7 @@ def _item_propfind_response(username: str, slug: str, item: storage.Item, reques
 # GET / HEAD — retrieve item
 @router.api_route("/{path:path}", methods=["GET", "HEAD"])
 async def dav_get(path: str, request: Request) -> Response:
-    username, err = _require_auth(request)
+    username, err = await _require_auth(request)
     if err:
         return err
 
@@ -434,7 +436,7 @@ async def dav_get(path: str, request: Request) -> Response:
 # PUT — create/update item
 @router.put("/{path:path}")
 async def dav_put(path: str, request: Request) -> Response:
-    username, err = _require_auth(request)
+    username, err = await _require_auth(request)
     if err:
         return err
 
@@ -467,7 +469,7 @@ async def dav_put(path: str, request: Request) -> Response:
 # DELETE — remove item or collection
 @router.delete("/{path:path}")
 async def dav_delete(path: str, request: Request) -> Response:
-    username, err = _require_auth(request)
+    username, err = await _require_auth(request)
     if err:
         return err
 
@@ -493,7 +495,7 @@ async def dav_delete(path: str, request: Request) -> Response:
 # MKCOL / MKCALENDAR — create collection
 @router.api_route("/{path:path}", methods=["MKCOL", "MKCALENDAR"])
 async def dav_mkcol(path: str, request: Request) -> Response:
-    username, err = _require_auth(request)
+    username, err = await _require_auth(request)
     if err:
         return err
 
@@ -539,7 +541,7 @@ async def dav_mkcol(path: str, request: Request) -> Response:
 # REPORT — calendar/addressbook queries
 @router.api_route("/{path:path}", methods=["REPORT"])
 async def dav_report(path: str, request: Request) -> Response:
-    username, err = _require_auth(request)
+    username, err = await _require_auth(request)
     if err:
         return err
 

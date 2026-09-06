@@ -8,10 +8,11 @@ addressbooks, events, and contacts.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
-import uuid
 import re
+import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Cookie, Form, Request, Response
@@ -19,6 +20,7 @@ from fastapi.responses import JSONResponse
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from . import auth, storage
+from .config import settings
 
 router = APIRouter(prefix="/api")
 
@@ -31,10 +33,6 @@ def _validate_color(color: str) -> bool:
 # Session helpers
 # ---------------------------------------------------------------------------
 
-_SECRET_KEY: str = os.environ.get("KAYENDAR_SECRET_KEY", "change-me-in-production")
-_SECURE_COOKIES: bool = os.environ.get("KAYENDAR_SECURE_COOKIES", "").lower() in (
-    "1", "true", "yes",
-)
 _SESSION_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
 _SESSION_COOKIE = "kayendar_session"
 
@@ -44,7 +42,7 @@ _serializer: Optional[URLSafeTimedSerializer] = None
 def _get_serializer() -> URLSafeTimedSerializer:
     global _serializer
     if _serializer is None:
-        _serializer = URLSafeTimedSerializer(_SECRET_KEY)
+        _serializer = URLSafeTimedSerializer(settings.secret_key)
     return _serializer
 
 
@@ -85,7 +83,7 @@ async def login(request: Request) -> JSONResponse:
         return _json_error(400, "Invalid JSON")
 
     try:
-        valid = auth.verify_user(username, password)
+        valid = await asyncio.to_thread(auth.verify_user, username, password)
     except ValueError as e:
         return _json_error(400, str(e))
 
@@ -103,7 +101,7 @@ async def login(request: Request) -> JSONResponse:
         httponly=True,
         samesite="lax",
         max_age=_SESSION_MAX_AGE,
-        secure=_SECURE_COOKIES,
+        secure=settings.secure_cookies,
     )
     return response
 
@@ -228,6 +226,78 @@ async def delete_collection(slug: str, request: Request) -> JSONResponse:
     deleted = storage.delete_collection(user, slug)
     if not deleted:
         return _json_error(404, "Collection not found")
+    return JSONResponse({"ok": True})
+
+
+@router.get("/collections/{slug}/export")
+async def export_collection(slug: str, request: Request) -> Response:
+    user = _get_current_user(request)
+    if not user:
+        return _json_error(401, "Not authenticated")
+    col = storage.get_collection(user, slug)
+    if col is None:
+        return _json_error(404, "Collection not found")
+    ics_content = storage.export_collection_ics(user, slug)
+    return Response(
+        content=ics_content,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{slug}.ics"'},
+    )
+
+
+@router.post("/collections/{slug}/import")
+async def import_collection(slug: str, request: Request) -> JSONResponse:
+    user = _get_current_user(request)
+    if not user:
+        return _json_error(401, "Not authenticated")
+    col = storage.get_collection(user, slug)
+    if col is None:
+        return _json_error(404, "Collection not found")
+    try:
+        body = await request.body()
+        content = body.decode("utf-8")
+        if content.strip().startswith("{"):
+            try:
+                parsed_json = json.loads(content)
+                content = parsed_json.get("ics", content)
+            except Exception:
+                pass
+    except Exception:
+        return _json_error(400, "Invalid payload")
+
+    count = storage.import_collection_ics(user, slug, content)
+    return JSONResponse({"imported": count})
+
+
+@router.get("/collections/{slug}/share")
+async def get_share(slug: str, request: Request) -> JSONResponse:
+    user = _get_current_user(request)
+    if not user:
+        return _json_error(401, "Not authenticated")
+    share = storage.get_collection_share(user, slug)
+    if not share:
+        return JSONResponse({"shared": False})
+    return JSONResponse({"shared": True, "token": share["token"], "url": f"/dav/share/{share['token']}.ics"})
+
+
+@router.post("/collections/{slug}/share")
+async def create_share(slug: str, request: Request) -> JSONResponse:
+    user = _get_current_user(request)
+    if not user:
+        return _json_error(401, "Not authenticated")
+    col = storage.get_collection(user, slug)
+    if col is None:
+        return _json_error(404, "Collection not found")
+    share = storage.create_collection_share(user, slug)
+    return JSONResponse({"shared": True, "token": share["token"], "url": f"/dav/share/{share['token']}.ics"})
+
+
+@router.delete("/collections/{slug}/share")
+async def delete_share(slug: str, request: Request) -> JSONResponse:
+    user = _get_current_user(request)
+    if not user:
+        return _json_error(401, "Not authenticated")
+    storage.revoke_collection_share(user, slug)
     return JSONResponse({"ok": True})
 
 

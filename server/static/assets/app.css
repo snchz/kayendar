@@ -532,3 +532,200 @@ input[type="color"] {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 3px; }
+
+/* ── Calendar Workspace & Tasks Drawer ── */
+.calendar-workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  gap: 12px;
+}
+
+.calendar-workspace .calendar-grid {
+  flex: 1;
+  height: 100%;
+}
+
+.tasks-drawer {
+  width: 290px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  animation: slideInRight 0.2s ease;
+  height: 100%;
+  flex-shrink: 0;
+}
+.tasks-drawer.hidden { display: none; }
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.tasks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tasks-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.new-task-form input {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.new-task-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tasks-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+.task-item:hover {
+  background: rgba(255,255,255,0.06);
+}
+.task-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+.task-title {
+  flex: 1;
+  font-size: 13px;
+  word-break: break-word;
+  transition: opacity var(--transition);
+}
+.task-title.completed {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+.task-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.task-item:hover .task-delete-btn {
+  opacity: 1;
+}
+.task-delete-btn:hover {
+  color: var(--danger);
+}
+.task-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 30px 10px;
+  font-size: 13px;
+}
+
+/* ── Current Time Indicator (Week View) ── */
+.current-time-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ef4444;
+  z-index: 20;
+  pointer-events: none;
+}
+.current-time-line .time-dot {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239,68,68,0.8);
+}
+
+/* ── Shortcuts Modal ── */
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.4);
+}
+
+/* ── Collection Tools & Sharing ── */
+.col-tools-section {
+  border-top: 1px solid var(--glass-border);
+  padding-top: 12px;
+}
+.col-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.share-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  background: rgba(0,0,0,0.25);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+}
+.share-url-input {
+  font-size: 11px !important;
+  font-family: monospace;
+  padding: 6px 8px !important;
+}
+.share-btn-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}

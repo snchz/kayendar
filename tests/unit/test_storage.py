@@ -166,3 +166,51 @@ def test_delete_user_data(tmp_path):
 
     storage.delete_user_data("gone")
     assert not user_dir.exists()
+
+
+def test_collection_share_lifecycle():
+    storage.create_collection("alice", "Personal", "calendar", slug="personal")
+    assert storage.get_collection_share("alice", "personal") is None
+
+    share = storage.create_collection_share("alice", "personal")
+    assert share is not None
+    assert "token" in share
+    token = share["token"]
+    assert len(token) >= 20
+
+    # Verify lookup by token
+    found = storage.get_share_by_token(token)
+    assert found is not None
+    assert found["username"] == "alice"
+    assert found["slug"] == "personal"
+
+    # Revoke share
+    revoked = storage.revoke_collection_share("alice", "personal")
+    assert revoked is True
+    assert storage.get_collection_share("alice", "personal") is None
+    assert storage.get_share_by_token(token) is None
+
+
+def test_export_and_import_collection():
+    storage.create_collection("alice", "Personal", "calendar", slug="personal")
+    storage.create_collection("bob", "Work", "calendar", slug="work")
+
+    ev1 = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:ev-1\r\nSUMMARY:Meeting 1\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    ev2 = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:ev-2\r\nSUMMARY:Meeting 2\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    storage.put_item("alice", "personal", "ev-1.ics", ev1)
+    storage.put_item("alice", "personal", "ev-2.ics", ev2)
+
+    # Export alice's collection
+    exported = storage.export_collection_ics("alice", "personal")
+    assert "BEGIN:VCALENDAR" in exported
+    assert "Meeting 1" in exported
+    assert "Meeting 2" in exported
+    assert exported.count("BEGIN:VEVENT") == 2
+
+    # Import into bob's collection
+    count = storage.import_collection_ics("bob", "work", exported)
+    assert count == 2
+    bob_items = storage.list_items("bob", "work")
+    assert len(bob_items) == 2
+    assert {i.filename for i in bob_items} == {"ev-1.ics", "ev-2.ics"}
+

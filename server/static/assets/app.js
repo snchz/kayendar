@@ -44,9 +44,11 @@ const state = {
   collections: [],
   events: {},   // slug -> [parsed event objects]
   contacts: {}, // slug -> [parsed contact objects]
+  tasks: {},    // slug -> [parsed VTODO objects]
   calView: 'month',
   calDate: new Date(),
   activeView: 'calendar',
+  showTasks: false,
 };
 
 // ── iCal helpers ─────────────────────────────────────────────
@@ -75,6 +77,28 @@ function parseIcs(content) {
     if (key === 'UID')       cur.uid = val;
   }
   return events;
+}
+
+function parseTodos(content) {
+  const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const todos = [];
+  let cur = null;
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (line === 'BEGIN:VTODO') { cur = { completed: false }; continue; }
+    if (line === 'END:VTODO') { if (cur && (cur.title || cur.uid)) { todos.push(cur); } cur = null; continue; }
+    if (!cur) continue;
+    const colon = line.indexOf(':');
+    if (colon < 0) continue;
+    const key = line.slice(0, colon).split(';')[0].toUpperCase();
+    const val = line.slice(colon + 1);
+    if (key === 'SUMMARY') cur.title = val;
+    if (key === 'STATUS') cur.completed = (val.toUpperCase() === 'COMPLETED');
+    if (key === 'UID') cur.uid = val;
+    if (key === 'DUE') cur.due = parseIcsDate(val);
+    if (key === 'DESCRIPTION') cur.description = val;
+  }
+  return todos;
 }
 
 function parseIcsDate(val) {
@@ -120,6 +144,25 @@ function buildIcs(uid, title, start, end, description = '', location = '', alarm
     location ? `LOCATION:${location}` : '',
     ...alarmLines,
     'END:VEVENT',
+    'END:VCALENDAR',
+  ].filter(Boolean).join('\r\n') + '\r\n';
+}
+
+function buildTodoIcs(uid, title, completed = false) {
+  const now = formatIcsDate(new Date()) + 'Z';
+  const status = completed ? 'COMPLETED' : 'NEEDS-ACTION';
+  const compLine = completed ? `COMPLETED:${now}` : '';
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Kayendar//EN',
+    'BEGIN:VTODO',
+    `UID:${uid}`,
+    `DTSTAMP:${now}`,
+    `SUMMARY:${title}`,
+    `STATUS:${status}`,
+    compLine,
+    'END:VTODO',
     'END:VCALENDAR',
   ].filter(Boolean).join('\r\n') + '\r\n';
 }
@@ -175,15 +218,20 @@ async function loadAllData() {
   state.collections = await api.get('/api/collections');
   state.events = {};
   state.contacts = {};
+  state.tasks = {};
 
   for (const col of state.collections) {
     try {
       const items = await api.get(`/api/collections/${col.slug}/items`);
       if (col.type === 'calendar') {
-        state.events[col.slug] = items.flatMap(i => {
+        state.events[col.slug] = [];
+        state.tasks[col.slug] = [];
+        for (const i of items) {
           const evs = parseIcs(i.content);
-          return evs.map(e => ({ ...e, filename: i.filename, collectionSlug: col.slug, collectionColor: col.color }));
-        });
+          evs.forEach(e => state.events[col.slug].push({ ...e, filename: i.filename, collectionSlug: col.slug, collectionColor: col.color }));
+          const todos = parseTodos(i.content);
+          todos.forEach(t => state.tasks[col.slug].push({ ...t, filename: i.filename, collectionSlug: col.slug, collectionColor: col.color }));
+        }
       } else {
         state.contacts[col.slug] = items.flatMap(i => {
           const cs = parseVcf(i.content);
@@ -192,6 +240,7 @@ async function loadAllData() {
       }
     } catch { /* skip */ }
   }
+  updateTasksCount();
 }
 
 // ── Collections sidebar ──────────────────────────────────────
@@ -223,6 +272,87 @@ function renderSidebar() {
     if (col.type === 'calendar') calList.appendChild(el);
     else abList.appendChild(el);
   }
+}
+
+// ── Tasks rendering ──────────────────────────────────────────
+function allTasks() {
+  return Object.values(state.tasks).flat();
+}
+
+function updateTasksCount() {
+  const badge = document.getElementById('tasks-count');
+  if (badge) {
+    const uncompleted = allTasks().filter(t => !t.completed).length;
+    badge.textContent = uncompleted;
+  }
+}
+
+function renderTasks() {
+  const list = document.getElementById('tasks-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const tasks = allTasks();
+  updateTasksCount();
+
+  if (!tasks.length) {
+    const empty = document.createElement('div');
+    empty.className = 'task-empty';
+    empty.textContent = 'No tasks yet. Add a task above!';
+    list.appendChild(empty);
+    return;
+  }
+
+  // Sort: incomplete first, completed last
+  tasks.sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1));
+
+  tasks.forEach(t => {
+    const item = document.createElement('div');
+    item.className = `task-item ${t.completed ? 'completed' : ''}`;
+
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.className = 'task-checkbox';
+    chk.checked = !!t.completed;
+
+    const titleSpan = document.createElement('span');
+    titleSpan.className = `task-title ${t.completed ? 'completed' : ''}`;
+    titleSpan.textContent = t.title || '(untitled)';
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'task-delete-btn';
+    delBtn.title = 'Delete task';
+    delBtn.innerHTML = '&times;';
+
+    chk.addEventListener('change', async () => {
+      try {
+        const newCompleted = chk.checked;
+        const content = buildTodoIcs(t.uid, t.title, newCompleted);
+        await api.put(`/api/collections/${t.collectionSlug}/items/${t.filename}`, { content });
+        t.completed = newCompleted;
+        renderTasks();
+      } catch (err) {
+        toast(err.message, 'error');
+        chk.checked = !chk.checked;
+      }
+    });
+
+    delBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        await api.delete(`/api/collections/${t.collectionSlug}/items/${t.filename}`);
+        toast('Task deleted');
+        await loadAllData();
+        renderTasks();
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+
+    item.appendChild(chk);
+    item.appendChild(titleSpan);
+    item.appendChild(delBtn);
+    list.appendChild(item);
+  });
 }
 
 // ── Calendar rendering ───────────────────────────────────────
@@ -396,6 +526,19 @@ function renderWeekView(grid) {
       evEl.addEventListener('click', () => openEditEvent(ev));
       eventsArea.appendChild(evEl);
     });
+
+    if (isToday) {
+      const now = new Date();
+      const currentH = now.getHours() + now.getMinutes() / 60;
+      const currentTop = currentH * 56;
+      const timeLine = document.createElement('div');
+      timeLine.className = 'current-time-line';
+      timeLine.style.top = `${currentTop}px`;
+      const timeDot = document.createElement('div');
+      timeDot.className = 'time-dot';
+      timeLine.appendChild(timeDot);
+      eventsArea.appendChild(timeLine);
+    }
 
     col.appendChild(eventsArea);
     col.addEventListener('click', (e) => {
@@ -669,16 +812,117 @@ function openNewCollection(type) {
   document.getElementById('col-slug').value = '';
   document.getElementById('col-color').value = type === 'calendar' ? '#6366f1' : '#10b981';
   document.getElementById('col-delete-btn').classList.add('hidden');
+  const tools = document.getElementById('col-tools-section');
+  if (tools) tools.classList.add('hidden');
+  const shareBox = document.getElementById('col-share-box');
+  if (shareBox) shareBox.classList.add('hidden');
   openModal('collection-modal');
 }
 
-function openEditCollection(col) {
+async function openEditCollection(col) {
   document.getElementById('collection-modal-title').textContent = 'Edit Collection';
   document.getElementById('col-name').value  = col.display_name;
   document.getElementById('col-color').value = col.color;
   document.getElementById('col-type').value  = col.type;
   document.getElementById('col-slug').value  = col.slug;
   document.getElementById('col-delete-btn').classList.remove('hidden');
+
+  const toolsSection = document.getElementById('col-tools-section');
+  const shareBox = document.getElementById('col-share-box');
+  const shareUrlInput = document.getElementById('col-share-url');
+
+  if (col.type === 'calendar' && toolsSection) {
+    toolsSection.classList.remove('hidden');
+    if (shareBox) shareBox.classList.add('hidden');
+    if (shareUrlInput) shareUrlInput.value = '';
+
+    try {
+      const s = await api.get(`/api/collections/${col.slug}/share`);
+      if (s.shared && s.url) {
+        if (shareBox) shareBox.classList.remove('hidden');
+        if (shareUrlInput) shareUrlInput.value = window.location.origin + s.url;
+      }
+    } catch { /* ignore */ }
+
+    const exportBtn = document.getElementById('col-export-btn');
+    if (exportBtn) {
+      exportBtn.onclick = () => {
+        window.location.href = `/api/collections/${col.slug}/export`;
+      };
+    }
+
+    const importInput = document.getElementById('col-import-input');
+    if (importInput) {
+      importInput.value = '';
+      importInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const res = await fetch(`/api/collections/${col.slug}/import`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/calendar; charset=utf-8' },
+            body: text,
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || 'Import failed');
+          toast(`Imported ${data.imported || 0} items`);
+          closeModal('collection-modal');
+          await loadAllData();
+          renderCalendar();
+          if (state.showTasks) renderTasks();
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      };
+    }
+
+    const shareBtn = document.getElementById('col-share-btn');
+    if (shareBtn) {
+      shareBtn.onclick = async () => {
+        try {
+          const s = await api.post(`/api/collections/${col.slug}/share`, {});
+          if (shareBox) shareBox.classList.remove('hidden');
+          if (shareUrlInput) shareUrlInput.value = window.location.origin + s.url;
+          toast('Public share link generated');
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      };
+    }
+
+    const copyBtn = document.getElementById('copy-share-btn');
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrlInput.value);
+          toast('Share link copied to clipboard');
+        } catch {
+          shareUrlInput.select();
+          document.execCommand('copy');
+          toast('Share link copied to clipboard');
+        }
+      };
+    }
+
+    const revokeBtn = document.getElementById('revoke-share-btn');
+    if (revokeBtn) {
+      revokeBtn.onclick = async () => {
+        try {
+          await api.delete(`/api/collections/${col.slug}/share`);
+          if (shareBox) shareBox.classList.add('hidden');
+          if (shareUrlInput) shareUrlInput.value = '';
+          toast('Share link revoked');
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      };
+    }
+  } else {
+    if (toolsSection) toolsSection.classList.add('hidden');
+    if (shareBox) shareBox.classList.add('hidden');
+  }
+
   openModal('collection-modal');
 }
 
@@ -762,6 +1006,7 @@ async function initApp() {
   await loadAllData();
   renderSidebar();
   renderCalendar();
+  renderTasks();
 }
 
 // ── Boot ──────────────────────────────────────────────────────
@@ -842,6 +1087,63 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('add-calendar-btn').addEventListener('click', () => openNewCollection('calendar'));
   document.getElementById('add-addressbook-btn').addEventListener('click', () => openNewCollection('addressbook'));
 
+  // Tasks Drawer
+  const toggleBtn = document.getElementById('toggle-tasks-btn');
+  const closeBtn  = document.getElementById('close-tasks-btn');
+  const drawer    = document.getElementById('tasks-drawer');
+
+  function toggleTasksDrawer(show) {
+    if (drawer) {
+      if (show === undefined) show = drawer.classList.contains('hidden');
+      state.showTasks = show;
+      if (show) {
+        drawer.classList.remove('hidden');
+        renderTasks();
+      } else {
+        drawer.classList.add('hidden');
+      }
+    }
+  }
+
+  if (toggleBtn) toggleBtn.addEventListener('click', () => toggleTasksDrawer());
+  if (closeBtn)  closeBtn.addEventListener('click', () => toggleTasksDrawer(false));
+
+  const taskForm = document.getElementById('new-task-form');
+  if (taskForm) {
+    taskForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('new-task-input');
+      const title = input.value.trim();
+      if (!title) return;
+
+      const cal = state.collections.find(c => c.type === 'calendar');
+      if (!cal) {
+        toast('No calendar available to store task', 'error');
+        return;
+      }
+
+      const uid = generateUid();
+      const filename = `${uid}.ics`;
+      const content = buildTodoIcs(uid, title, false);
+
+      try {
+        await api.put(`/api/collections/${cal.slug}/items/${filename}`, { content });
+        input.value = '';
+        await loadAllData();
+        renderTasks();
+        toast('Task added');
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+  }
+
+  // Shortcuts modal
+  const shortcutsBtn = document.getElementById('shortcuts-btn');
+  if (shortcutsBtn) {
+    shortcutsBtn.addEventListener('click', () => openModal('shortcuts-modal'));
+  }
+
   // Forms
   document.getElementById('event-form').addEventListener('submit', saveEvent);
   document.getElementById('event-delete-btn').addEventListener('click', deleteEvent);
@@ -872,10 +1174,62 @@ document.addEventListener('DOMContentLoaded', () => {
   // Contacts search
   document.getElementById('contacts-search').addEventListener('input', renderContacts);
 
-  // ESC to close modals
+  // Keyboard navigation & shortcuts
   document.addEventListener('keydown', e => {
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) {
+      if (e.key === 'Escape') {
+        e.target.blur();
+        document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => closeModal(m.id));
+      }
+      return;
+    }
+
     if (e.key === 'Escape') {
       document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => closeModal(m.id));
+      return;
+    }
+
+    const modalOpen = document.querySelector('.modal-overlay:not(.hidden)');
+    if (modalOpen) return;
+
+    if (state.activeView !== 'calendar') return;
+
+    const key = e.key.toLowerCase();
+    if (key === 't') {
+      e.preventDefault();
+      state.calDate = new Date();
+      renderCalendar();
+    } else if (key === 'm') {
+      e.preventDefault();
+      state.calView = 'month';
+      document.getElementById('view-month-btn').classList.add('active');
+      document.getElementById('view-week-btn').classList.remove('active');
+      renderCalendar();
+    } else if (key === 'w') {
+      e.preventDefault();
+      state.calView = 'week';
+      document.getElementById('view-week-btn').classList.add('active');
+      document.getElementById('view-month-btn').classList.remove('active');
+      renderCalendar();
+    } else if (key === 'j' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (state.calView === 'month') state.calDate.setMonth(state.calDate.getMonth() - 1);
+      else state.calDate.setDate(state.calDate.getDate() - 7);
+      state.calDate = new Date(state.calDate);
+      renderCalendar();
+    } else if (key === 'k' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (state.calView === 'month') state.calDate.setMonth(state.calDate.getMonth() + 1);
+      else state.calDate.setDate(state.calDate.getDate() + 7);
+      state.calDate = new Date(state.calDate);
+      renderCalendar();
+    } else if (key === 'c') {
+      e.preventDefault();
+      openNewEvent(new Date());
+    } else if (key === '?') {
+      e.preventDefault();
+      openModal('shortcuts-modal');
     }
   });
 
