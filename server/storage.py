@@ -676,3 +676,52 @@ def import_collection_ics(username: str, slug: str, raw_ics: str) -> int:
                 except Exception:
                     pass
     return imported_count
+
+
+def export_collection_vcf(username: str, slug: str) -> str:
+    """Combine all contacts of an addressbook collection into a single multi-vCard text."""
+    _validate_slug(slug)
+    items = list_items(username, slug)
+    cards: list[str] = []
+    for item in items:
+        if not item.filename.endswith(".vcf"):
+            continue
+        cleaned = item.content.strip()
+        if cleaned:
+            cards.append(cleaned)
+    return "\r\n".join(cards) + ("\r\n" if cards else "")
+
+
+def import_collection_vcf(username: str, slug: str, raw_vcf: str) -> int:
+    """Parse raw vCard text and import each VCARD component as an individual item."""
+    _validate_slug(slug)
+    lines = raw_vcf.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    in_vcard = False
+    card_lines: list[str] = []
+    imported_count = 0
+
+    for line in lines:
+        if line.startswith("BEGIN:VCARD"):
+            in_vcard = True
+            card_lines = [line]
+        elif in_vcard:
+            card_lines.append(line)
+            if line.startswith("END:VCARD"):
+                in_vcard = False
+                uid: Optional[str] = None
+                for cline in card_lines:
+                    if cline.startswith("UID:"):
+                        uid = cline[4:].strip()
+                        break
+                if not uid:
+                    uid = str(uuid.uuid4())
+                safe_uid = re.sub(r"[^a-zA-Z0-9_\-\.@]", "-", uid)[:64]
+                filename = f"{safe_uid}.vcf"
+                item_content = "\r\n".join(card_lines) + "\r\n"
+                try:
+                    put_item(username, slug, filename, item_content)
+                    imported_count += 1
+                except Exception:
+                    pass
+    return imported_count
+

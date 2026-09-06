@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from . import auth, storage
@@ -49,6 +49,12 @@ def create_app() -> FastAPI:
             media_type="text/calendar; charset=utf-8",
             headers={"Content-Disposition": f'inline; filename="{share["slug"]}.ics"'},
         )
+
+    # RFC 6764: Locating CalDAV and CardDAV Services (.well-known auto-discovery)
+    @app.api_route("/.well-known/caldav", methods=["GET", "PROPFIND", "OPTIONS", "HEAD"])
+    @app.api_route("/.well-known/carddav", methods=["GET", "PROPFIND", "OPTIONS", "HEAD"])
+    async def well_known_dav_redirect():
+        return RedirectResponse(url="/dav/", status_code=308)
 
     # Mount DAV endpoints
     app.include_router(dav_router, prefix="/dav")

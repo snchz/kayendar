@@ -237,12 +237,20 @@ async def export_collection(slug: str, request: Request) -> Response:
     col = storage.get_collection(user, slug)
     if col is None:
         return _json_error(404, "Collection not found")
-    ics_content = storage.export_collection_ics(user, slug)
-    return Response(
-        content=ics_content,
-        media_type="text/calendar; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{slug}.ics"'},
-    )
+    if col.collection_type == "addressbook":
+        vcf_content = storage.export_collection_vcf(user, slug)
+        return Response(
+            content=vcf_content,
+            media_type="text/vcard; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{slug}.vcf"'},
+        )
+    else:
+        ics_content = storage.export_collection_ics(user, slug)
+        return Response(
+            content=ics_content,
+            media_type="text/calendar; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{slug}.ics"'},
+        )
 
 
 @router.post("/collections/{slug}/import")
@@ -259,13 +267,16 @@ async def import_collection(slug: str, request: Request) -> JSONResponse:
         if content.strip().startswith("{"):
             try:
                 parsed_json = json.loads(content)
-                content = parsed_json.get("ics", content)
+                content = parsed_json.get("ics") or parsed_json.get("vcf") or parsed_json.get("content") or content
             except Exception:
                 pass
     except Exception:
         return _json_error(400, "Invalid payload")
 
-    count = storage.import_collection_ics(user, slug, content)
+    if col.collection_type == "addressbook":
+        count = storage.import_collection_vcf(user, slug, content)
+    else:
+        count = storage.import_collection_ics(user, slug, content)
     return JSONResponse({"imported": count})
 
 

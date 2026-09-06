@@ -138,6 +138,8 @@ const i18n = {
     data_sharing: 'Datos y Compartición',
     export_ics: '📥 Exportar .ics',
     import_ics: '📤 Importar .ics',
+    export_vcf: '📥 Exportar .vcf',
+    import_vcf: '📤 Importar .vcf',
     public_link: '🔗 Enlace Público',
 
     quick_add_title: '⚡ Cita Rápida',
@@ -349,6 +351,8 @@ const i18n = {
     data_sharing: 'Data & Sharing',
     export_ics: '📥 Export .ics',
     import_ics: '📤 Import .ics',
+    export_vcf: '📥 Export .vcf',
+    import_vcf: '📤 Import .vcf',
     public_link: '🔗 Public Link',
 
     quick_add_title: '⚡ Quick Add Event',
@@ -1946,38 +1950,43 @@ async function openEditCollection(col) {
   const toolsSection = document.getElementById('col-tools-section');
   const shareBox = document.getElementById('col-share-box');
   const shareUrlInput = document.getElementById('col-share-url');
+  const exportBtn = document.getElementById('col-export-btn');
+  const importLabel = document.getElementById('col-import-label');
+  const importInput = document.getElementById('col-import-input');
+  const shareBtn = document.getElementById('col-share-btn');
 
-  if (col.type === 'calendar' && toolsSection) {
+  if ((col.type === 'calendar' || col.type === 'addressbook') && toolsSection) {
     toolsSection.classList.remove('hidden');
     if (shareBox) shareBox.classList.add('hidden');
     if (shareUrlInput) shareUrlInput.value = '';
 
-    try {
-      const s = await api.get(`/api/collections/${col.slug}/share`);
-      if (s.shared && s.url) {
-        if (shareBox) shareBox.classList.remove('hidden');
-        if (shareUrlInput) shareUrlInput.value = window.location.origin + s.url;
-      }
-    } catch { /* ignore */ }
+    const isAb = col.type === 'addressbook';
 
-    const exportBtn = document.getElementById('col-export-btn');
     if (exportBtn) {
+      exportBtn.textContent = t(isAb ? 'export_vcf' : 'export_ics');
+      exportBtn.setAttribute('data-i18n', isAb ? 'export_vcf' : 'export_ics');
       exportBtn.onclick = () => {
         window.location.href = `/api/collections/${col.slug}/export`;
       };
     }
 
-    const importInput = document.getElementById('col-import-input');
+    if (importLabel) {
+      importLabel.textContent = t(isAb ? 'import_vcf' : 'import_ics');
+      importLabel.setAttribute('data-i18n', isAb ? 'import_vcf' : 'import_ics');
+    }
+
     if (importInput) {
       importInput.value = '';
+      importInput.accept = isAb ? '.vcf' : '.ics';
       importInput.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         try {
           const text = await file.text();
+          const contentType = isAb ? 'text/vcard; charset=utf-8' : 'text/calendar; charset=utf-8';
           const res = await fetch(`/api/collections/${col.slug}/import`, {
             method: 'POST',
-            headers: { 'Content-Type': 'text/calendar; charset=utf-8' },
+            headers: { 'Content-Type': contentType },
             body: text,
           });
           const data = await res.json();
@@ -1985,54 +1994,70 @@ async function openEditCollection(col) {
           toast(t('imported_items', { n: data.imported || 0 }));
           closeModal('collection-modal');
           await loadAllData();
-          renderCalendar();
-          if (state.showTasks) renderTasks();
+          if (isAb) {
+            renderContacts();
+          } else {
+            renderCalendar();
+            if (state.showTasks) renderTasks();
+          }
         } catch (err) {
           toast(err.message, 'error');
         }
       };
     }
 
-    const shareBtn = document.getElementById('col-share-btn');
-    if (shareBtn) {
-      shareBtn.onclick = async () => {
-        try {
-          const s = await api.post(`/api/collections/${col.slug}/share`, {});
+    if (isAb) {
+      if (shareBtn) shareBtn.classList.add('hidden');
+    } else {
+      if (shareBtn) {
+        shareBtn.classList.remove('hidden');
+        shareBtn.onclick = async () => {
+          try {
+            const s = await api.post(`/api/collections/${col.slug}/share`, {});
+            if (shareBox) shareBox.classList.remove('hidden');
+            if (shareUrlInput) shareUrlInput.value = window.location.origin + s.url;
+            toast(t('share_link_generated'));
+          } catch (err) {
+            toast(err.message, 'error');
+          }
+        };
+      }
+
+      try {
+        const s = await api.get(`/api/collections/${col.slug}/share`);
+        if (s.shared && s.url) {
           if (shareBox) shareBox.classList.remove('hidden');
           if (shareUrlInput) shareUrlInput.value = window.location.origin + s.url;
-          toast(t('share_link_generated'));
-        } catch (err) {
-          toast(err.message, 'error');
         }
-      };
-    }
+      } catch { /* ignore */ }
 
-    const copyBtn = document.getElementById('copy-share-btn');
-    if (copyBtn) {
-      copyBtn.onclick = async () => {
-        try {
-          await navigator.clipboard.writeText(shareUrlInput.value);
-          toast(t('share_link_copied'));
-        } catch {
-          shareUrlInput.select();
-          document.execCommand('copy');
-          toast(t('share_link_copied'));
-        }
-      };
-    }
+      const copyBtn = document.getElementById('copy-share-btn');
+      if (copyBtn) {
+        copyBtn.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(shareUrlInput.value);
+            toast(t('share_link_copied'));
+          } catch {
+            shareUrlInput.select();
+            document.execCommand('copy');
+            toast(t('share_link_copied'));
+          }
+        };
+      }
 
-    const revokeBtn = document.getElementById('revoke-share-btn');
-    if (revokeBtn) {
-      revokeBtn.onclick = async () => {
-        try {
-          await api.delete(`/api/collections/${col.slug}/share`);
-          if (shareBox) shareBox.classList.add('hidden');
-          if (shareUrlInput) shareUrlInput.value = '';
-          toast(t('share_link_revoked'));
-        } catch (err) {
-          toast(err.message, 'error');
-        }
-      };
+      const revokeBtn = document.getElementById('revoke-share-btn');
+      if (revokeBtn) {
+        revokeBtn.onclick = async () => {
+          try {
+            await api.delete(`/api/collections/${col.slug}/share`);
+            if (shareBox) shareBox.classList.add('hidden');
+            if (shareUrlInput) shareUrlInput.value = '';
+            toast(t('share_link_revoked'));
+          } catch (err) {
+            toast(err.message, 'error');
+          }
+        };
+      }
     }
   } else {
     if (toolsSection) toolsSection.classList.add('hidden');

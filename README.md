@@ -22,17 +22,17 @@ Kayendar is a simple, lightweight, and self-hosted CalDAV/CardDAV server designe
 
 ## Features
 
-- 📅 **CalDAV Server** — Full calendar synchronization with iOS, Android (DAVx⁵/OpenSync), Thunderbird, and One Calendar.
+- 📅 **CalDAV Server & RFC 6764 Auto-Discovery** — Full calendar synchronization with iOS, macOS, Android (DAVx⁵/OpenSync), Thunderbird, and One Calendar with zero configuration headaches via `/.well-known/caldav` and `/.well-known/carddav`.
 - 📇 **CardDAV Server & Rich Contacts** — Contact synchronization with standard clients, supporting unlimited categorized phone numbers (Mobile 📱, Work 💼, Home 🏠, Other 📞), physical addresses (`ADR`) with 1-click Google Maps navigation, company (`ORG`), job title (`TITLE`), birthdays (`BDAY`), multi-line notes (`NOTE`), multiple emails, and direct click-to-call / click-to-email links.
 - 📁 **Contextual Sidebar & Address Book Filter** — Clean interface that automatically adapts: shows calendars only when viewing the calendar, and address books only when in contacts view (with click-to-filter by address book).
-- 🌐 **Modern SPA Web Client** — Gorgeous glassmorphic user interface supporting responsive month/week views, event creation, and rich contact management.
+- 🌐 **Modern SPA Web Client** — Gorgeous glassmorphic user interface supporting responsive month/week views, event creation, live now-timeline indicator, and rich contact management.
 - ⚡ **Natural Language Quick Add** — Create events typing naturally in Spanish or English (e.g., *"Cena mañana 21:00 en Luigi"* or *"Meeting friday 10am"*). Shortcut: `Q`.
 - ➕ **In-Modal Calendar Creation** — Add a new calendar directly from the event creation modal with custom colors, without losing typed event details.
 - 📋 **VTODO Tasks Drawer** — Integrated task manager supporting RFC 5545 VTODO items; drag and drop tasks onto the calendar grid or week slots to schedule them.
 - 📆 **Customizable Week Start** — Toggle between Monday (ISO 8601 default) and Sunday as the first day of the week with instant UI updates.
-- 🔗 **Public iCal Feeds & Data Portability** — Generate token-secured public subscription URLs for external apps, plus one-click `.ics` export and import.
+- 🔗 **Public iCal Feeds & Full Data Portability** — Generate token-secured public subscription URLs for external apps, plus one-click `.ics` calendar and `.vcf` address book export and import.
 - 📍 **Enhanced Event Metadata** — Full support for event **Locations** and **Reminders (Alarms)** synchronized bidirectionally.
-- ⚙️ **Settings & Preferences Modal** — Dedicated configuration dialog (Shortcut: `,`) to manage interface language, week start day, CalDAV/CardDAV device synchronization assistant, and system information.
+- ⚙️ **Consolidated Settings & User Profile** — Dedicated configuration dialog (Shortcut: `,`) with language switch, week start, CalDAV/CardDAV sync guide, alongside an executive sidebar user card (`🟢 En línea`, quick settings, logout).
 - ⌨️ **Keyboard Navigation & Glassmorphic Tooltips** — Full keyboard shortcut support (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) and hover tooltips for every control.
 - 🌐 **Bilingual (ES / EN)** — Dynamic multi-language toggle with instant live interface translation.
 - 🏷️ **Version & GitHub Integration** — Visible app release version tag (`v1.0.0`) and direct link to official GitHub repository across login and dashboard footers.
@@ -263,17 +263,17 @@ Kayendar es un servidor CalDAV/CardDAV simple, ligero y autoalojado diseñado pa
 
 ## Características
 
-- 📅 **Servidor CalDAV** — Sincronización completa de calendarios con iOS, Android (DAVx⁵/OpenSync), Thunderbird y One Calendar.
+- 📅 **Servidor CalDAV y Auto-Discovery RFC 6764** — Sincronización completa de calendarios con iOS, macOS, Android (DAVx⁵/OpenSync), Thunderbird y One Calendar sin problemas de rutas manuales gracias a `/.well-known/caldav` y `/.well-known/carddav`.
 - 📇 **Servidor CardDAV y Ficha Completa de Contactos** — Sincronización con clientes estándar, admitiendo teléfonos ilimitados categorizados (Móvil 📱, Trabajo 💼, Casa 🏠, Otro 📞), dirección física (`ADR`) con apertura en Google Maps con 1 clic, empresa/organización (`ORG`), cargo (`TITLE`), cumpleaños (`BDAY`), notas (`NOTE`), emails y enlaces directos (`tel:` / `mailto:`).
 - 📁 **Barra Lateral Contextual y Filtro por Libreta** — Interfaz limpia que se adapta al contexto: muestra calendarios solo en vista de calendario, y libretas solo en vista de contactos (con filtrado instantáneo al hacer clic en una libreta).
-- 🌐 **Cliente Web SPA Moderno** — Preciosa interfaz de usuario con diseño "glassmorphism", vistas mensuales/semanales responsivas con iconos vectoriales y gestión fluida de contactos.
+- 🌐 **Cliente Web SPA Moderno** — Preciosa interfaz de usuario con diseño "glassmorphism", vistas mensuales/semanales responsivas, línea temporal en vivo en semana y gestión fluida de contactos.
 - ⚡ **Cita Rápida en Lenguaje Natural** — Crea citas redactando de forma intuitiva en español o inglés (ej: *"Cena mañana 21:00 en Luigi"* o *"Meeting friday 10am"*). Atajo: `Q`.
 - ➕ **Creación de Calendarios dentro del Evento** — Añade y personaliza un nuevo calendario directamente desde el formulario de "Nuevo Evento" sin perder los datos que ya habías introducido.
 - 📋 **Panel de Tareas VTODO** — Gestor de tareas integrado con soporte RFC 5545 VTODO; arrastra tareas al calendario mensual o a los bloques horarios semanales para agendarlas.
 - 📆 **Semana Personalizable (Lunes o Domingo)** — Conmuta con un solo clic el primer día de la semana entre Lunes (por defecto ISO 8601) y Domingo.
-- 🔗 **Enlaces Públicos iCal y Portabilidad** — Suscripción segura por URL con token para herramientas externas, además de importación y exportación de archivos `.ics` con un clic.
+- 🔗 **Enlaces Públicos iCal y Portabilidad Total** — Suscripción segura por URL con token para herramientas externas, además de importación y exportación en 1 clic de calendarios `.ics` y libretas de contactos `.vcf`.
 - 📍 **Metadatos de Eventos Mejorados** — Soporte completo para **Ubicaciones** y **Recordatorios (Alarmas)** de eventos sincronizados bidireccionalmente.
-- ⚙️ **Modal de Configuración y Preferencias** — Panel centralizado de ajustes (Atajo: `,`) para cambiar idioma, primer día de la semana, asistente de sincronización de dispositivos CalDAV/CardDAV e información técnica.
+- ⚙️ **Configuración Centralizada y Tarjeta de Usuario** — Panel integral de ajustes (Atajo: `,`) para cambiar idioma, primer día de semana y guía de sincronización CalDAV/CardDAV, complementado por la tarjeta ejecutiva de usuario en la barra lateral (`🟢 En línea`, ajustes rápidos, cerrar sesión).
 - ⌨️ **Navegación por Teclado y Tooltips** — Atajos rápidos (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) e información contextual emergente en cada botón.
 - 🌐 **Soporte Bilingüe (ES / EN)** — Selector interactivo con traducción completa y dinámica de la interfaz en tiempo real.
 - 🏷️ **Integración de Versión y GitHub** — Etiqueta visible de versión (`v1.0.0`) y enlace directo al repositorio oficial de GitHub en el pie de página y la pantalla de acceso.

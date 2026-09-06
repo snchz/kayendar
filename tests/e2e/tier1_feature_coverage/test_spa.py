@@ -140,3 +140,66 @@ def test_spa_collection_sharing_public_feed(server_url, spa_session):
     # Cleanup
     spa_session.delete(f"{server_url}/api/collections/{slug}")
 
+
+@pytest.mark.tier1
+def test_spa_export_import_addressbook_vcf(server_url, spa_session):
+    """Test 1-click export and import of .vcf address books."""
+    c_res = spa_session.post(
+        f"{server_url}/api/collections",
+        json={"display_name": "Contact Export Test", "type": "addressbook"},
+    )
+    assert c_res.status_code == 201
+    slug = c_res.json()["slug"]
+
+    # Put a contact
+    vcf = (
+        "BEGIN:VCARD\r\n"
+        "VERSION:3.0\r\n"
+        "UID:card-export-1\r\n"
+        "FN:Ada Lovelace\r\n"
+        "EMAIL:ada@example.com\r\n"
+        "TEL:+34 600 000 000\r\n"
+        "END:VCARD\r\n"
+    )
+    put_res = spa_session.put(
+        f"{server_url}/api/collections/{slug}/items/card-export-1.vcf",
+        json={"content": vcf},
+    )
+    assert put_res.status_code in (200, 201)
+
+    # Export .vcf
+    exp_res = spa_session.get(f"{server_url}/api/collections/{slug}/export")
+    assert exp_res.status_code == 200
+    assert "text/vcard" in exp_res.headers.get("Content-Type", "")
+    assert "Ada Lovelace" in exp_res.text
+
+    # Create target address book to import into
+    c2_res = spa_session.post(
+        f"{server_url}/api/collections",
+        json={"display_name": "Contact Import Test", "type": "addressbook"},
+    )
+    assert c2_res.status_code == 201
+    slug2 = c2_res.json()["slug"]
+
+    # Import raw vCard text
+    imp_res = spa_session.post(
+        f"{server_url}/api/collections/{slug2}/import",
+        data=exp_res.text.encode("utf-8"),
+        headers={"Content-Type": "text/vcard; charset=utf-8"},
+    )
+    assert imp_res.status_code == 200
+    assert imp_res.json()["imported"] >= 1
+
+    # Cleanup
+    spa_session.delete(f"{server_url}/api/collections/{slug}")
+    spa_session.delete(f"{server_url}/api/collections/{slug2}")
+
+
+@pytest.mark.tier1
+def test_well_known_dav_discovery(server_url):
+    """Test RFC 6764 auto-discovery redirects for CalDAV and CardDAV."""
+    for path in ["/.well-known/caldav", "/.well-known/carddav"]:
+        res = requests.get(f"{server_url}{path}", allow_redirects=False)
+        assert res.status_code == 308
+        assert res.headers.get("Location") == "/dav/"
+
