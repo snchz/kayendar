@@ -100,9 +100,20 @@ const i18n = {
     modal_edit_contact: 'Editar Contacto',
     contact_firstname: 'Nombre',
     contact_lastname: 'Apellidos',
+    contact_org: 'Empresa / Organización',
+    contact_org_placeholder: 'ej: Google, Hospital, Autónomo...',
+    contact_title: 'Cargo / Puesto',
+    contact_title_placeholder: 'ej: Ingeniero, Diseñador...',
     contact_email: 'Correo electrónico',
     contact_phone: 'Teléfonos',
+    contact_address: 'Dirección física / postal',
+    contact_address_placeholder: 'Calle, número, ciudad, código postal',
+    contact_bday: 'Cumpleaños',
+    contact_notes: 'Notas / Apuntes',
+    contact_notes_placeholder: 'Notas adicionales sobre este contacto...',
     contact_addressbook: 'Libreta de contactos',
+    click_filter_ab: 'Clic para ver solo los contactos de esta libreta',
+    click_show_all_ab: 'Filtro activo: clic para ver todas las libretas',
     save_contact: 'Guardar Contacto',
     add_phone: 'Añadir teléfono',
     tt_add_phone: 'Añadir otro número de teléfono a este contacto',
@@ -295,9 +306,20 @@ const i18n = {
     modal_edit_contact: 'Edit Contact',
     contact_firstname: 'First name',
     contact_lastname: 'Last name',
+    contact_org: 'Company / Organization',
+    contact_org_placeholder: 'e.g.: Google, Hospital, Freelance...',
+    contact_title: 'Job Title',
+    contact_title_placeholder: 'e.g.: Engineer, Designer...',
     contact_email: 'Email',
     contact_phone: 'Phones',
+    contact_address: 'Physical / Postal Address',
+    contact_address_placeholder: 'Street, number, city, postal code',
+    contact_bday: 'Birthday',
+    contact_notes: 'Notes',
+    contact_notes_placeholder: 'Additional notes about this contact...',
     contact_addressbook: 'Address Book',
+    click_filter_ab: 'Click to view only contacts in this address book',
+    click_show_all_ab: 'Filtered: click to view all address books',
     save_contact: 'Save Contact',
     add_phone: 'Add phone',
     tt_add_phone: 'Add another phone number to this contact',
@@ -453,6 +475,7 @@ const state = {
   calDate: new Date(),
   activeView: 'calendar',
   showTasks: false,
+  selectedAddressbook: null,
   lang: localStorage.getItem('kayendar_lang') || (navigator.language && navigator.language.startsWith('es') ? 'es' : 'en'),
   firstDayOfWeek: parseInt(localStorage.getItem('kayendar_first_day') ?? '1', 10), // 1 = Lunes/Monday (default), 0 = Domingo/Sunday
 };
@@ -667,7 +690,24 @@ function parseVcf(content) {
           c.phones.push({ number: val, type });
         }
       }
-      if (key === 'UID')   c.uid   = val;
+      if (key === 'ADR') {
+        // ADR components: po_box;extended;street;city;region;postal_code;country
+        const parts = val.split(';').map(p => p.trim()).filter(Boolean);
+        c.address = parts.join(', ');
+      }
+      if (key === 'ORG') {
+        c.org = val.split(';')[0].trim();
+      }
+      if (key === 'TITLE') {
+        c.title = val.trim();
+      }
+      if (key === 'NOTE') {
+        c.notes = val.replace(/\\n/g, '\n').replace(/\\,/g, ',');
+      }
+      if (key === 'BDAY') {
+        c.bday = val.trim();
+      }
+      if (key === 'UID') c.uid = val;
     }
     if (c.phones.length > 0) {
       c.phone = c.phones[0].number;
@@ -679,7 +719,7 @@ function parseVcf(content) {
   return contacts;
 }
 
-function buildVcf(uid, firstName, lastName, email, phones) {
+function buildVcf(uid, firstName, lastName, email, phones, address = '', org = '', title = '', notes = '', bday = '') {
   const telLines = [];
   if (Array.isArray(phones)) {
     phones.forEach(p => {
@@ -693,7 +733,7 @@ function buildVcf(uid, firstName, lastName, email, phones) {
     telLines.push(`TEL;TYPE=CELL:${phones.trim()}`);
   }
 
-  return [
+  const lines = [
     'BEGIN:VCARD',
     'VERSION:3.0',
     `UID:${uid}`,
@@ -701,8 +741,15 @@ function buildVcf(uid, firstName, lastName, email, phones) {
     `N:${lastName};${firstName};;;`,
     email ? `EMAIL:${email}` : '',
     ...telLines,
+    address ? `ADR;TYPE=HOME:;;${address.replace(/;/g, ' ')};;;;` : '',
+    org ? `ORG:${org}` : '',
+    title ? `TITLE:${title}` : '',
+    notes ? `NOTE:${notes.replace(/\r?\n/g, '\\n').replace(/,/g, '\\,')}` : '',
+    bday ? `BDAY:${bday}` : '',
     'END:VCARD',
-  ].filter(Boolean).join('\r\n') + '\r\n';
+  ];
+
+  return lines.filter(Boolean).join('\r\n') + '\r\n';
 }
 
 function generateUid() {
@@ -746,17 +793,37 @@ async function loadAllData() {
 function renderSidebar() {
   const calList = document.getElementById('calendars-list');
   const abList  = document.getElementById('addressbooks-list');
-  calList.innerHTML = '';
-  abList.innerHTML  = '';
+  if (calList) calList.innerHTML = '';
+  if (abList) abList.innerHTML  = '';
+
+  // Contextual visibility: Only show calendars in calendar view, only addressbooks in contacts view
+  const calSec = document.getElementById('sidebar-calendars-section');
+  const abSec  = document.getElementById('sidebar-addressbooks-section');
+  if (calSec && abSec) {
+    if (state.activeView === 'calendar') {
+      calSec.classList.remove('hidden');
+      abSec.classList.add('hidden');
+    } else if (state.activeView === 'contacts') {
+      calSec.classList.add('hidden');
+      abSec.classList.remove('hidden');
+    }
+  }
 
   for (const col of state.collections) {
     const isVisible = state.visibleCalendars[col.slug] !== false;
+    const isAbActive = (col.type === 'addressbook' && state.selectedAddressbook === col.slug);
+    const isAbFiltered = (col.type === 'addressbook' && state.selectedAddressbook !== null && !isAbActive);
+
     const el = document.createElement('div');
-    el.className = 'collection-item' + (isVisible ? ' active' : ' muted');
-    el.dataset.slug = col.slug;
     if (col.type === 'calendar') {
+      el.className = 'collection-item' + (isVisible ? ' active' : ' muted');
       el.title = isVisible ? t('click_hide_cal') : t('click_show_cal');
+    } else {
+      el.className = 'collection-item' + (isAbActive ? ' active' : (isAbFiltered ? ' muted' : ''));
+      el.title = isAbActive ? t('click_show_all_ab') : t('click_filter_ab');
     }
+    el.dataset.slug = col.slug;
+
     el.innerHTML = `
       <span class="collection-dot" style="background:${col.color}"></span>
       <span class="collection-name">${col.display_name}</span>
@@ -772,6 +839,10 @@ function renderSidebar() {
         state.visibleCalendars[col.slug] = !isVisible;
         renderSidebar();
         renderCalendar();
+      } else if (col.type === 'addressbook') {
+        state.selectedAddressbook = (state.selectedAddressbook === col.slug) ? null : col.slug;
+        renderSidebar();
+        renderContacts();
       }
     });
 
@@ -780,8 +851,8 @@ function renderSidebar() {
       openEditCollection(col);
     });
 
-    if (col.type === 'calendar') calList.appendChild(el);
-    else abList.appendChild(el);
+    if (col.type === 'calendar' && calList) calList.appendChild(el);
+    else if (abList) abList.appendChild(el);
   }
 }
 
@@ -1247,12 +1318,20 @@ function renderContacts() {
   grid.innerHTML = '';
 
   let contacts = allContacts();
+  if (state.selectedAddressbook) {
+    contacts = state.contacts[state.selectedAddressbook] || [];
+  }
+
   if (search) {
     contacts = contacts.filter(c =>
       (c.fn || '').toLowerCase().includes(search) ||
       (c.firstName || '').toLowerCase().includes(search) ||
       (c.lastName || '').toLowerCase().includes(search) ||
       (c.email || '').toLowerCase().includes(search) ||
+      (c.org || '').toLowerCase().includes(search) ||
+      (c.title || '').toLowerCase().includes(search) ||
+      (c.address || '').toLowerCase().includes(search) ||
+      (c.notes || '').toLowerCase().includes(search) ||
       (c.phones || []).some(p => (p.number || '').toLowerCase().includes(search)) ||
       (c.phone || '').toLowerCase().includes(search)
     );
@@ -1274,25 +1353,58 @@ function renderContacts() {
     const colors = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#8b5cf6','#06b6d4'];
     const color = colors[(name.charCodeAt(0) || 0) % colors.length];
 
+    let roleHtml = '';
+    if (c.title || c.org) {
+      const roleText = [c.title, c.org].filter(Boolean).join(' · ');
+      roleHtml = `<div class="contact-role" title="${roleText}"><span class="detail-icon">💼</span><span>${roleText}</span></div>`;
+    }
+
     let phonesHtml = '';
     if (c.phones && c.phones.length > 0) {
       phonesHtml = c.phones.map(p => `
-        <div class="contact-phone" title="${p.type}">
-          <span class="phone-type-tag">${typeIcons[p.type] || '📞'}</span>
+        <div class="contact-detail-row contact-phone" title="${p.type}">
+          <span class="detail-icon">${typeIcons[p.type] || '📞'}</span>
           <a href="tel:${encodeURIComponent(p.number)}" onclick="event.stopPropagation()">${p.number}</a>
         </div>
       `).join('');
     } else if (c.phone) {
-      phonesHtml = `<div class="contact-phone"><span class="phone-type-tag">📞</span><a href="tel:${encodeURIComponent(c.phone)}" onclick="event.stopPropagation()">${c.phone}</a></div>`;
+      phonesHtml = `<div class="contact-detail-row contact-phone"><span class="detail-icon">📞</span><a href="tel:${encodeURIComponent(c.phone)}" onclick="event.stopPropagation()">${c.phone}</a></div>`;
     }
+
+    const emailHtml = c.email ? `
+      <div class="contact-detail-row contact-email" title="${c.email}">
+        <span class="detail-icon">✉️</span>
+        <a href="mailto:${c.email}" onclick="event.stopPropagation()">${c.email}</a>
+      </div>` : '';
+
+    const addressHtml = c.address ? `
+      <div class="contact-detail-row contact-address" title="${c.address}">
+        <span class="detail-icon">📍</span>
+        <a href="https://maps.google.com/?q=${encodeURIComponent(c.address)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${c.address}</a>
+      </div>` : '';
+
+    const bdayHtml = c.bday ? `
+      <div class="contact-detail-row contact-bday" title="${c.bday}">
+        <span class="detail-icon">🎂</span>
+        <span>${c.bday}</span>
+      </div>` : '';
+
+    const notesHtml = c.notes ? `
+      <div class="contact-notes" title="${c.notes}">
+        <span>${c.notes}</span>
+      </div>` : '';
 
     const card = document.createElement('div');
     card.className = 'contact-card';
     card.innerHTML = `
       <div class="contact-avatar" style="background:${color}">${initials}</div>
       <div class="contact-name">${name}</div>
-      ${c.email ? `<div class="contact-email">✉️ <a href="mailto:${c.email}" onclick="event.stopPropagation()">${c.email}</a></div>` : ''}
+      ${roleHtml}
+      ${emailHtml}
       ${phonesHtml}
+      ${addressHtml}
+      ${bdayHtml}
+      ${notesHtml}
     `;
     card.addEventListener('click', () => openEditContact(c));
     grid.appendChild(card);
@@ -1649,6 +1761,16 @@ function openNewContact() {
   document.getElementById('contact-uid').value = '';
   document.getElementById('contact-filename').value = '';
   document.getElementById('contact-collection').value = '';
+  const orgEl = document.getElementById('contact-org');
+  if (orgEl) orgEl.value = '';
+  const titleEl = document.getElementById('contact-title');
+  if (titleEl) titleEl.value = '';
+  const addrEl = document.getElementById('contact-address');
+  if (addrEl) addrEl.value = '';
+  const bdayEl = document.getElementById('contact-bday');
+  if (bdayEl) bdayEl.value = '';
+  const notesEl = document.getElementById('contact-notes');
+  if (notesEl) notesEl.value = '';
   document.getElementById('contact-delete-btn').classList.add('hidden');
   const container = document.getElementById('contact-phones-container');
   if (container) {
@@ -1666,7 +1788,17 @@ function openEditContact(c) {
   document.getElementById('contact-collection').value = c.collectionSlug || '';
   document.getElementById('contact-firstname').value = c.firstName || '';
   document.getElementById('contact-lastname').value  = c.lastName  || '';
+  const orgEl = document.getElementById('contact-org');
+  if (orgEl) orgEl.value = c.org || '';
+  const titleEl = document.getElementById('contact-title');
+  if (titleEl) titleEl.value = c.title || '';
   document.getElementById('contact-email').value     = c.email     || '';
+  const addrEl = document.getElementById('contact-address');
+  if (addrEl) addrEl.value = c.address || '';
+  const bdayEl = document.getElementById('contact-bday');
+  if (bdayEl) bdayEl.value = c.bday || '';
+  const notesEl = document.getElementById('contact-notes');
+  if (notesEl) notesEl.value = c.notes || '';
 
   const container = document.getElementById('contact-phones-container');
   if (container) {
@@ -1689,7 +1821,12 @@ async function saveContact(e) {
   e.preventDefault();
   const firstName = document.getElementById('contact-firstname').value.trim();
   const lastName  = document.getElementById('contact-lastname').value.trim();
+  const org       = document.getElementById('contact-org')?.value.trim() || '';
+  const title     = document.getElementById('contact-title')?.value.trim() || '';
   const email     = document.getElementById('contact-email').value.trim();
+  const address   = document.getElementById('contact-address')?.value.trim() || '';
+  const bday      = document.getElementById('contact-bday')?.value.trim() || '';
+  const notes     = document.getElementById('contact-notes')?.value.trim() || '';
   const slug      = document.getElementById('contact-addressbook').value;
   let uid      = document.getElementById('contact-uid').value;
   let filename = document.getElementById('contact-filename').value;
@@ -1712,7 +1849,7 @@ async function saveContact(e) {
   if (!uid) uid = generateUid();
   if (!filename) filename = uid + '.vcf';
 
-  const content = buildVcf(uid, firstName, lastName, email, phones);
+  const content = buildVcf(uid, firstName, lastName, email, phones, address, org, title, notes, bday);
 
   try {
     await api.put(`/api/collections/${slug}/items/${filename}`, { content });
@@ -1912,6 +2049,7 @@ function switchView(view) {
   document.getElementById(`view-${view}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById(`nav-${view}`).classList.add('active');
+  renderSidebar();
   if (view === 'contacts') renderContacts();
   if (view === 'calendar') renderCalendar();
 }

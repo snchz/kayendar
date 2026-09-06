@@ -110,7 +110,7 @@
           </button>
         </nav>
 
-        <div class="sidebar-section">
+        <div class="sidebar-section" id="sidebar-calendars-section">
           <div class="sidebar-section-header">
             <span data-i18n="calendars">Calendarios</span>
             <button id="add-calendar-btn" class="icon-btn" data-tooltip="Añadir nuevo calendario" data-i18n-tooltip="tt_add_calendar">
@@ -120,7 +120,7 @@
           <div id="calendars-list" class="collection-list"></div>
         </div>
 
-        <div class="sidebar-section">
+        <div class="sidebar-section hidden" id="sidebar-addressbooks-section">
           <div class="sidebar-section-header">
             <span data-i18n="addressbooks">Libretas</span>
             <button id="add-addressbook-btn" class="icon-btn" data-tooltip="Añadir libreta de contactos" data-i18n-tooltip="tt_add_addressbook">
@@ -354,6 +354,16 @@
             <input id="contact-lastname" type="text" placeholder="Apellidos" required />
           </div>
         </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="contact-org" data-i18n="contact_org">Empresa / Organización</label>
+            <input id="contact-org" type="text" placeholder="ej: Google, Hospital, Autónomo..." data-i18n-placeholder="contact_org_placeholder" />
+          </div>
+          <div class="field">
+            <label for="contact-title" data-i18n="contact_title">Cargo / Puesto</label>
+            <input id="contact-title" type="text" placeholder="ej: Ingeniero, Diseñador..." data-i18n-placeholder="contact_title_placeholder" />
+          </div>
+        </div>
         <div class="field">
           <label for="contact-email" data-i18n="contact_email">Email</label>
           <input id="contact-email" type="email" placeholder="email@ejemplo.com" />
@@ -368,8 +378,22 @@
           <div id="contact-phones-container" class="contact-phones-list"></div>
         </div>
         <div class="field">
-          <label for="contact-addressbook" data-i18n="contact_addressbook">Libreta de contactos</label>
-          <select id="contact-addressbook"></select>
+          <label for="contact-address" data-i18n="contact_address">Dirección física / postal</label>
+          <input id="contact-address" type="text" placeholder="Calle, número, ciudad, código postal" data-i18n-placeholder="contact_address_placeholder" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="contact-bday" data-i18n="contact_bday">Cumpleaños</label>
+            <input id="contact-bday" type="date" />
+          </div>
+          <div class="field">
+            <label for="contact-addressbook" data-i18n="contact_addressbook">Libreta de contactos</label>
+            <select id="contact-addressbook"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="contact-notes" data-i18n="contact_notes">Notas / Apuntes</label>
+          <textarea id="contact-notes" rows="2" placeholder="Notas adicionales sobre este contacto..." data-i18n-placeholder="contact_notes_placeholder"></textarea>
         </div>
         <input type="hidden" id="contact-uid" />
         <input type="hidden" id="contact-filename" />
@@ -642,6 +666,6 @@
   <!-- Toast notifications -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="/assets/app.js?v=5"></script>
+  <script src="/assets/app.js?v=6"></script>
 </body>
 </html>

@@ -23,7 +23,8 @@ Kayendar is a simple, lightweight, and self-hosted CalDAV/CardDAV server designe
 ## Features
 
 - 📅 **CalDAV Server** — Full calendar synchronization with iOS, Android (DAVx⁵/OpenSync), Thunderbird, and One Calendar.
-- 📇 **CardDAV Server with Multi-Phone Contacts** — Contact synchronization with standard clients, supporting unlimited categorized phone numbers (Mobile 📱, Work 💼, Home 🏠, Other 📞), multiple emails, and direct click-to-call / click-to-email links.
+- 📇 **CardDAV Server & Rich Contacts** — Contact synchronization with standard clients, supporting unlimited categorized phone numbers (Mobile 📱, Work 💼, Home 🏠, Other 📞), physical addresses (`ADR`) with 1-click Google Maps navigation, company (`ORG`), job title (`TITLE`), birthdays (`BDAY`), multi-line notes (`NOTE`), multiple emails, and direct click-to-call / click-to-email links.
+- 📁 **Contextual Sidebar & Address Book Filter** — Clean interface that automatically adapts: shows calendars only when viewing the calendar, and address books only when in contacts view (with click-to-filter by address book).
 - 🌐 **Modern SPA Web Client** — Gorgeous glassmorphic user interface supporting responsive month/week views, event creation, and rich contact management.
 - ⚡ **Natural Language Quick Add** — Create events typing naturally in Spanish or English (e.g., *"Cena mañana 21:00 en Luigi"* or *"Meeting friday 10am"*). Shortcut: `Q`.
 - ➕ **In-Modal Calendar Creation** — Add a new calendar directly from the event creation modal with custom colors, without losing typed event details.
@@ -263,7 +264,8 @@ Kayendar es un servidor CalDAV/CardDAV simple, ligero y autoalojado diseñado pa
 ## Características
 
 - 📅 **Servidor CalDAV** — Sincronización completa de calendarios con iOS, Android (DAVx⁵/OpenSync), Thunderbird y One Calendar.
-- 📇 **Servidor CardDAV con Múltiples Teléfonos** — Sincronización de contactos con clientes estándar, admitiendo números de teléfono ilimitados categorizados (Móvil 📱, Trabajo 💼, Casa 🏠, Otro 📞), múltiples emails y enlaces directos de llamada (`tel:`) y correo (`mailto:`).
+- 📇 **Servidor CardDAV y Ficha Completa de Contactos** — Sincronización con clientes estándar, admitiendo teléfonos ilimitados categorizados (Móvil 📱, Trabajo 💼, Casa 🏠, Otro 📞), dirección física (`ADR`) con apertura en Google Maps con 1 clic, empresa/organización (`ORG`), cargo (`TITLE`), cumpleaños (`BDAY`), notas (`NOTE`), emails y enlaces directos (`tel:` / `mailto:`).
+- 📁 **Barra Lateral Contextual y Filtro por Libreta** — Interfaz limpia que se adapta al contexto: muestra calendarios solo en vista de calendario, y libretas solo en vista de contactos (con filtrado instantáneo al hacer clic en una libreta).
 - 🌐 **Cliente Web SPA Moderno** — Preciosa interfaz de usuario con diseño "glassmorphism", vistas mensuales/semanales responsivas con iconos vectoriales y gestión fluida de contactos.
 - ⚡ **Cita Rápida en Lenguaje Natural** — Crea citas redactando de forma intuitiva en español o inglés (ej: *"Cena mañana 21:00 en Luigi"* o *"Meeting friday 10am"*). Atajo: `Q`.
 - ➕ **Creación de Calendarios dentro del Evento** — Añade y personaliza un nuevo calendario directamente desde el formulario de "Nuevo Evento" sin perder los datos que ya habías introducido.

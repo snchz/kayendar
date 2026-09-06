@@ -13,7 +13,8 @@ Kayendar is a lightweight, self-contained CalDAV and CardDAV synchronization ser
 - **Frontend (HTML5 / Vanilla JS / CSS Glassmorphism SPA)**:
   - Zero-external-dependency Single Page Application with premium glassmorphic UI.
   - Responsive Month and Week views (with hourly grid, smooth scroll, and visual pulses).
-  - Advanced contact management with multi-phone support (Mobile, Work, Home, Other) and click-to-call/email.
+  - Advanced contact management with multi-phone support (Mobile, Work, Home, Other), physical address with map links (`ADR`), company/organization (`ORG`), job title (`TITLE`), notes (`NOTE`), birthdays (`BDAY`), and click-to-call/email.
+  - Contextual sidebar: displays calendars only in Calendar view and address books only in Contacts view, with click-to-filter address book collections.
   - Natural language "Quick Add" event parser in Spanish and English (Shortcut `Q`).
   - Inline calendar creation directly inside event creation dialogs.
   - VTODO tasks side drawer with drag-and-drop scheduling onto the calendar.
