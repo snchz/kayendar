@@ -101,9 +101,18 @@ const i18n = {
     contact_firstname: 'Nombre',
     contact_lastname: 'Apellidos',
     contact_email: 'Correo electrónico',
-    contact_phone: 'Teléfono',
+    contact_phone: 'Teléfonos',
     contact_addressbook: 'Libreta de contactos',
     save_contact: 'Guardar Contacto',
+    add_phone: 'Añadir teléfono',
+    tt_add_phone: 'Añadir otro número de teléfono a este contacto',
+    delete_phone: 'Eliminar teléfono',
+    create: 'Crear',
+    new_calendar: 'Nuevo Calendario',
+    create_new_calendar: 'Crear nuevo',
+    create_new_calendar_option: 'Crear nuevo calendario...',
+    cal_name_placeholder: 'Nombre del calendario...',
+    tt_create_calendar: 'Crear un nuevo calendario',
 
     modal_new_cal: 'Nuevo Calendario',
     modal_new_ab: 'Nueva Libreta',
@@ -270,9 +279,18 @@ const i18n = {
     contact_firstname: 'First name',
     contact_lastname: 'Last name',
     contact_email: 'Email',
-    contact_phone: 'Phone',
+    contact_phone: 'Phones',
     contact_addressbook: 'Address Book',
     save_contact: 'Save Contact',
+    add_phone: 'Add phone',
+    tt_add_phone: 'Add another phone number to this contact',
+    delete_phone: 'Delete phone',
+    create: 'Create',
+    new_calendar: 'New Calendar',
+    create_new_calendar: 'Create new',
+    create_new_calendar_option: 'Create new calendar...',
+    cal_name_placeholder: 'Calendar name...',
+    tt_create_calendar: 'Create a new calendar',
 
     modal_new_cal: 'New Calendar',
     modal_new_ab: 'New Address Book',
@@ -581,11 +599,12 @@ function parseVcf(content) {
   const contacts = [];
   const cards = content.split(/BEGIN:VCARD/i).slice(1);
   for (const card of cards) {
-    const c = {};
+    const c = { phones: [] };
     for (const line of card.split(/\r?\n/)) {
       const colon = line.indexOf(':');
       if (colon < 0) continue;
-      const key = line.slice(0, colon).split(';')[0].toUpperCase();
+      const fullKey = line.slice(0, colon).trim();
+      const key = fullKey.split(';')[0].toUpperCase();
       const val = line.slice(colon + 1).trim();
       if (key === 'FN') c.fn = val;
       if (key === 'N') {
@@ -594,15 +613,47 @@ function parseVcf(content) {
         c.firstName = parts[1] || '';
       }
       if (key === 'EMAIL') c.email = val;
-      if (key === 'TEL')   c.phone = val;
+      if (key === 'TEL') {
+        let type = 'CELL';
+        const typeMatch = fullKey.match(/TYPE=([^;:]+)/i);
+        if (typeMatch) {
+          const tVal = typeMatch[1].toUpperCase();
+          if (tVal.includes('WORK')) type = 'WORK';
+          else if (tVal.includes('HOME')) type = 'HOME';
+          else if (tVal.includes('CELL') || tVal.includes('MOBILE')) type = 'CELL';
+          else if (tVal.includes('OTHER')) type = 'OTHER';
+          else type = 'CELL';
+        }
+        if (val) {
+          c.phones.push({ number: val, type });
+        }
+      }
       if (key === 'UID')   c.uid   = val;
+    }
+    if (c.phones.length > 0) {
+      c.phone = c.phones[0].number;
+    } else {
+      c.phone = '';
     }
     if (c.fn || c.firstName || c.lastName) contacts.push(c);
   }
   return contacts;
 }
 
-function buildVcf(uid, firstName, lastName, email, phone) {
+function buildVcf(uid, firstName, lastName, email, phones) {
+  const telLines = [];
+  if (Array.isArray(phones)) {
+    phones.forEach(p => {
+      const num = typeof p === 'string' ? p.trim() : (p.number || '').trim();
+      const typ = (typeof p === 'object' && p.type) ? p.type.toUpperCase() : 'CELL';
+      if (num) {
+        telLines.push(`TEL;TYPE=${typ}:${num}`);
+      }
+    });
+  } else if (phones && typeof phones === 'string' && phones.trim()) {
+    telLines.push(`TEL;TYPE=CELL:${phones.trim()}`);
+  }
+
   return [
     'BEGIN:VCARD',
     'VERSION:3.0',
@@ -610,7 +661,7 @@ function buildVcf(uid, firstName, lastName, email, phone) {
     `FN:${firstName} ${lastName}`.trim(),
     `N:${lastName};${firstName};;;`,
     email ? `EMAIL:${email}` : '',
-    phone ? `TEL:${phone}` : '',
+    ...telLines,
     'END:VCARD',
   ].filter(Boolean).join('\r\n') + '\r\n';
 }
@@ -1162,7 +1213,9 @@ function renderContacts() {
       (c.fn || '').toLowerCase().includes(search) ||
       (c.firstName || '').toLowerCase().includes(search) ||
       (c.lastName || '').toLowerCase().includes(search) ||
-      (c.email || '').toLowerCase().includes(search)
+      (c.email || '').toLowerCase().includes(search) ||
+      (c.phones || []).some(p => (p.number || '').toLowerCase().includes(search)) ||
+      (c.phone || '').toLowerCase().includes(search)
     );
   }
 
@@ -1174,19 +1227,33 @@ function renderContacts() {
     return;
   }
 
+  const typeIcons = { CELL: '📱', WORK: '💼', HOME: '🏠', OTHER: '📞' };
+
   contacts.forEach(c => {
     const name = c.fn || `${c.firstName || ''} ${c.lastName || ''}`.trim() || '?';
     const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
     const colors = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#8b5cf6','#06b6d4'];
     const color = colors[(name.charCodeAt(0) || 0) % colors.length];
 
+    let phonesHtml = '';
+    if (c.phones && c.phones.length > 0) {
+      phonesHtml = c.phones.map(p => `
+        <div class="contact-phone" title="${p.type}">
+          <span class="phone-type-tag">${typeIcons[p.type] || '📞'}</span>
+          <a href="tel:${encodeURIComponent(p.number)}" onclick="event.stopPropagation()">${p.number}</a>
+        </div>
+      `).join('');
+    } else if (c.phone) {
+      phonesHtml = `<div class="contact-phone"><span class="phone-type-tag">📞</span><a href="tel:${encodeURIComponent(c.phone)}" onclick="event.stopPropagation()">${c.phone}</a></div>`;
+    }
+
     const card = document.createElement('div');
     card.className = 'contact-card';
     card.innerHTML = `
       <div class="contact-avatar" style="background:${color}">${initials}</div>
       <div class="contact-name">${name}</div>
-      ${c.email ? `<div class="contact-email">${c.email}</div>` : ''}
-      ${c.phone ? `<div class="contact-phone">${c.phone}</div>` : ''}
+      ${c.email ? `<div class="contact-email">✉️ <a href="mailto:${c.email}" onclick="event.stopPropagation()">${c.email}</a></div>` : ''}
+      ${phonesHtml}
     `;
     card.addEventListener('click', () => openEditContact(c));
     grid.appendChild(card);
@@ -1424,10 +1491,13 @@ function toDatetimeLocal(d) {
 
 function populateCalendarSelect(selectId, selectedSlug) {
   const sel = document.getElementById(selectId);
+  if (!sel) return;
   const cals = state.collections.filter(c => c.type === 'calendar');
-  sel.innerHTML = cals.map(c =>
+  let html = cals.map(c =>
     `<option value="${c.slug}" ${c.slug === selectedSlug ? 'selected' : ''}>${c.display_name}</option>`
   ).join('');
+  html += `<option value="__new_cal__">+ ${t('create_new_calendar_option')}</option>`;
+  sel.innerHTML = html;
 }
 
 function populateAddressbookSelect(selectId, selectedSlug) {
@@ -1451,7 +1521,7 @@ async function saveEvent(e) {
   let filename = document.getElementById('event-filename').value;
 
   if (!title) { toast(t('title_required'), 'error'); return; }
-  if (!slug)  { toast(t('select_calendar'), 'error'); return; }
+  if (!slug || slug === '__new_cal__') { toast(t('select_calendar'), 'error'); return; }
 
   if (!uid) uid = generateUid();
   if (!filename) filename = uid + '.ics';
@@ -1485,6 +1555,55 @@ async function deleteEvent() {
 }
 
 // ── Contact modal ─────────────────────────────────────────────
+function renderPhoneRow(container, phone = { number: '', type: 'CELL' }) {
+  const row = document.createElement('div');
+  row.className = 'phone-row';
+
+  const select = document.createElement('select');
+  select.className = 'phone-type-select';
+  const types = [
+    { val: 'CELL', label: '📱 Móvil' },
+    { val: 'WORK', label: '💼 Trabajo' },
+    { val: 'HOME', label: '🏠 Casa' },
+    { val: 'OTHER', label: '📞 Otro' },
+  ];
+  if (state.lang === 'en') {
+    types[0].label = '📱 Mobile';
+    types[1].label = '💼 Work';
+    types[2].label = '🏠 Home';
+    types[3].label = '📞 Other';
+  }
+  select.innerHTML = types.map(tp =>
+    `<option value="${tp.val}" ${tp.val === (phone.type || 'CELL') ? 'selected' : ''}>${tp.label}</option>`
+  ).join('');
+
+  const input = document.createElement('input');
+  input.type = 'tel';
+  input.className = 'phone-number-input';
+  input.placeholder = '+34 600 000 000';
+  input.value = phone.number || '';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'icon-btn phone-remove-btn';
+  removeBtn.title = t('delete_phone');
+  removeBtn.innerHTML = '&times;';
+  removeBtn.addEventListener('click', () => {
+    const allRows = container.querySelectorAll('.phone-row');
+    if (allRows.length > 1) {
+      row.remove();
+    } else {
+      input.value = '';
+    }
+  });
+
+  row.appendChild(select);
+  row.appendChild(input);
+  row.appendChild(removeBtn);
+  container.appendChild(row);
+  return input;
+}
+
 function openNewContact() {
   document.getElementById('contact-form').reset();
   document.getElementById('contact-modal-title').textContent = t('modal_new_contact');
@@ -1492,6 +1611,11 @@ function openNewContact() {
   document.getElementById('contact-filename').value = '';
   document.getElementById('contact-collection').value = '';
   document.getElementById('contact-delete-btn').classList.add('hidden');
+  const container = document.getElementById('contact-phones-container');
+  if (container) {
+    container.innerHTML = '';
+    renderPhoneRow(container, { number: '', type: 'CELL' });
+  }
   populateAddressbookSelect('contact-addressbook');
   openModal('contact-modal');
 }
@@ -1504,7 +1628,19 @@ function openEditContact(c) {
   document.getElementById('contact-firstname').value = c.firstName || '';
   document.getElementById('contact-lastname').value  = c.lastName  || '';
   document.getElementById('contact-email').value     = c.email     || '';
-  document.getElementById('contact-phone').value     = c.phone     || '';
+
+  const container = document.getElementById('contact-phones-container');
+  if (container) {
+    container.innerHTML = '';
+    if (c.phones && c.phones.length > 0) {
+      c.phones.forEach(p => renderPhoneRow(container, p));
+    } else if (c.phone) {
+      renderPhoneRow(container, { number: c.phone, type: 'CELL' });
+    } else {
+      renderPhoneRow(container, { number: '', type: 'CELL' });
+    }
+  }
+
   document.getElementById('contact-delete-btn').classList.remove('hidden');
   populateAddressbookSelect('contact-addressbook', c.collectionSlug);
   openModal('contact-modal');
@@ -1515,7 +1651,6 @@ async function saveContact(e) {
   const firstName = document.getElementById('contact-firstname').value.trim();
   const lastName  = document.getElementById('contact-lastname').value.trim();
   const email     = document.getElementById('contact-email').value.trim();
-  const phone     = document.getElementById('contact-phone').value.trim();
   const slug      = document.getElementById('contact-addressbook').value;
   let uid      = document.getElementById('contact-uid').value;
   let filename = document.getElementById('contact-filename').value;
@@ -1523,10 +1658,22 @@ async function saveContact(e) {
   if (!lastName && !firstName) { toast(t('name_required'), 'error'); return; }
   if (!slug) { toast(t('select_addressbook'), 'error'); return; }
 
+  const phones = [];
+  const container = document.getElementById('contact-phones-container');
+  if (container) {
+    container.querySelectorAll('.phone-row').forEach(row => {
+      const num = row.querySelector('.phone-number-input')?.value.trim();
+      const typ = row.querySelector('.phone-type-select')?.value || 'CELL';
+      if (num) {
+        phones.push({ number: num, type: typ });
+      }
+    });
+  }
+
   if (!uid) uid = generateUid();
   if (!filename) filename = uid + '.vcf';
 
-  const content = buildVcf(uid, firstName, lastName, email, phone);
+  const content = buildVcf(uid, firstName, lastName, email, phones);
 
   try {
     await api.put(`/api/collections/${slug}/items/${filename}`, { content });
@@ -1926,6 +2073,95 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('contact-delete-btn').addEventListener('click', deleteContact);
   document.getElementById('collection-form').addEventListener('submit', saveCollection);
   document.getElementById('col-delete-btn').addEventListener('click', deleteCollection);
+
+  // Add phone button in contact modal
+  const addPhoneBtn = document.getElementById('contact-add-phone-btn');
+  if (addPhoneBtn) {
+    addPhoneBtn.addEventListener('click', () => {
+      const container = document.getElementById('contact-phones-container');
+      if (container) {
+        const input = renderPhoneRow(container, { number: '', type: 'CELL' });
+        if (input) input.focus();
+      }
+    });
+  }
+
+  // Inline calendar creation in event modal
+  const eventCalSelect = document.getElementById('event-calendar');
+  const inlineCalBox = document.getElementById('event-inline-cal-box');
+  const inlineCalToggleBtn = document.getElementById('event-new-cal-toggle-btn');
+  const inlineCalSaveBtn = document.getElementById('inline-cal-save-btn');
+  const inlineCalCancelBtn = document.getElementById('inline-cal-cancel-btn');
+  const inlineCalName = document.getElementById('inline-cal-name');
+  const inlineCalColor = document.getElementById('inline-cal-color');
+
+  let lastSelectedCalSlug = '';
+
+  if (eventCalSelect) {
+    eventCalSelect.addEventListener('focus', () => {
+      if (eventCalSelect.value !== '__new_cal__') {
+        lastSelectedCalSlug = eventCalSelect.value;
+      }
+    });
+    eventCalSelect.addEventListener('change', () => {
+      if (eventCalSelect.value === '__new_cal__') {
+        if (inlineCalBox) {
+          inlineCalBox.classList.remove('hidden');
+          if (inlineCalName) inlineCalName.focus();
+        }
+      } else {
+        lastSelectedCalSlug = eventCalSelect.value;
+      }
+    });
+  }
+
+  if (inlineCalToggleBtn) {
+    inlineCalToggleBtn.addEventListener('click', () => {
+      if (inlineCalBox) {
+        const isHidden = inlineCalBox.classList.toggle('hidden');
+        if (!isHidden && inlineCalName) {
+          inlineCalName.focus();
+        }
+      }
+    });
+  }
+
+  if (inlineCalCancelBtn) {
+    inlineCalCancelBtn.addEventListener('click', () => {
+      if (inlineCalBox) inlineCalBox.classList.add('hidden');
+      if (eventCalSelect && lastSelectedCalSlug) {
+        eventCalSelect.value = lastSelectedCalSlug;
+      } else if (eventCalSelect) {
+        const firstCal = state.collections.find(c => c.type === 'calendar');
+        if (firstCal) eventCalSelect.value = firstCal.slug;
+      }
+    });
+  }
+
+  if (inlineCalSaveBtn) {
+    inlineCalSaveBtn.addEventListener('click', async () => {
+      const name = inlineCalName?.value.trim();
+      const color = inlineCalColor?.value || '#6366f1';
+      if (!name) {
+        toast(t('name_required'), 'error');
+        if (inlineCalName) inlineCalName.focus();
+        return;
+      }
+      try {
+        const created = await api.post('/api/collections', { display_name: name, color, type: 'calendar' });
+        toast(t('collection_created'));
+        if (inlineCalName) inlineCalName.value = '';
+        if (inlineCalBox) inlineCalBox.classList.add('hidden');
+        await loadAllData();
+        renderSidebar();
+        renderCalendar();
+        populateCalendarSelect('event-calendar', created.slug);
+        lastSelectedCalSlug = created.slug;
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+  }
 
   // Modal close buttons
   document.querySelectorAll('.modal-close').forEach(btn => {

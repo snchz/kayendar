@@ -515,7 +515,125 @@ textarea { resize: vertical; }
   flex-shrink: 0;
 }
 .contact-name { font-weight: 600; font-size: 15px; }
-.contact-email, .contact-phone { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contact-email, .contact-phone {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.contact-phone a, .contact-email a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.contact-phone a:hover, .contact-email a:hover {
+  color: var(--accent-light);
+  text-decoration: underline;
+}
+.phone-type-tag {
+  font-size: 11px;
+}
+
+/* ── Form Field Extras & Inline Creation ── */
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.field-label-row label {
+  margin-bottom: 0 !important;
+}
+.text-link-btn {
+  background: none;
+  border: none;
+  color: var(--accent-light);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition);
+}
+.text-link-btn:hover {
+  color: #a5b4fc;
+  text-decoration: underline;
+}
+
+.inline-create-box {
+  margin-top: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+.inline-create-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inline-create-inputs input[type="text"] {
+  flex: 1;
+  height: 32px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+}
+.inline-create-inputs input[type="color"] {
+  width: 32px;
+  height: 32px;
+  padding: 2px;
+  border-radius: 4px;
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  background: transparent;
+}
+.btn-sm {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  height: 32px;
+}
+
+/* ── Dynamic Contact Phones ── */
+.contact-phones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.phone-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.phone-type-select {
+  width: 120px !important;
+  flex-shrink: 0;
+  font-size: 12px !important;
+  height: 36px !important;
+  padding: 6px 8px !important;
+}
+.phone-number-input {
+  flex: 1;
+  height: 36px !important;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+}
+.phone-remove-btn {
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  border-radius: 4px;
+}
+.phone-remove-btn:hover {
+  color: var(--danger) !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
 .contact-empty {
   grid-column: 1/-1; text-align: center;
   color: var(--text-muted); padding: 60px;

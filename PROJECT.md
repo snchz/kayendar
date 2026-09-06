@@ -1,60 +1,74 @@
-# Project: Kayendar (CalDAV/CardDAV Server & Modern SPA client)
+# Project: Kayendar (CalDAV/CardDAV Server & Modern SPA Client)
 
 ## Architecture
-Kayendar is a lightweight, self-contained CalDAV and CardDAV synchronization server with an integrated web SPA client..
-- **Backend (Python)**:
-  - Custom WSGI/ASGI or Flask-based application handling WebDAV/CalDAV/CardDAV sync requests.
-  - JSON-based user management stored in `data/users.json`.
-  - Directory-based storage for calendars and addressbooks:
-    - Calendars are stored under `data/calendars/<username>/<calendar_id>/` as individual `.ics` files.
-    - Addressbooks are stored under `data/contacts/<username>/<addressbook_id>/` as individual `.vcf` files.
-  - Basic Authentication for DAV clients.
-  - Session cookie authentication for the SPA frontend client.
-- **Frontend (HTML/JS/CSS SPA)**:
-  - Modern Single Page Application with premium glassmorphic UI.
-  - Supports light/dark theme, transitions, monthly/weekly grid for calendar, and contacts view/form.
-  - Communicates with the backend using standard web client logic or DAV endpoints.
+Kayendar is a lightweight, self-contained CalDAV and CardDAV synchronization server with an integrated web SPA client.
+- **Backend (Python / Starlette / Uvicorn)**:
+  - High-performance asynchronous ASGI application handling WebDAV/CalDAV/CardDAV sync requests.
+  - JSON-based user management with PBKDF2/argon2 password hashing stored in `data/users.json`.
+  - Directory-based flat file storage for calendars and addressbooks:
+    - Calendars: `data/calendars/<username>/<calendar_id>/` as individual `.ics` files.
+    - Addressbooks: `data/contacts/<username>/<addressbook_id>/` as individual `.vcf` files.
+  - HTTP Basic Authentication for DAV clients (iOS, Android, Thunderbird, etc.).
+  - Cryptographically signed session cookie authentication for the SPA web client.
+- **Frontend (HTML5 / Vanilla JS / CSS Glassmorphism SPA)**:
+  - Zero-external-dependency Single Page Application with premium glassmorphic UI.
+  - Responsive Month and Week views (with hourly grid, smooth scroll, and visual pulses).
+  - Advanced contact management with multi-phone support (Mobile, Work, Home, Other) and click-to-call/email.
+  - Natural language "Quick Add" event parser in Spanish and English (Shortcut `Q`).
+  - Inline calendar creation directly inside event creation dialogs.
+  - VTODO tasks side drawer with drag-and-drop scheduling onto the calendar.
+  - Public iCal token subscriptions, `.ics` import/export, and configurable week start (Monday / Sunday).
+  - Bilingual live toggle (ES / EN).
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
 | M1 | E2E Test Suite Design | Establish test framework, design 4 tiers of E2E tests, write TEST_INFRA.md and TEST_READY.md. | None | DONE |
-| M2 | Core Auth & File Storage | Implement users.json authentication, hash password storage, ICS/VCF directory layouts. | None | IN_PROGRESS |
-| M3 | CalDAV/CardDAV Server | Implement OPTIONS, PROPFIND, REPORT, PUT, DELETE, MKCOL/MKCALENDAR. | M2 | PLANNED |
-| M4 | Web Client & Frontend SPA | Develop the modern Glassmorphism frontend UI with session auth and calendar/contact views. | M3 | PLANNED |
-| M5 | Containerization & Integration | Dockerfile, docker-compose, and basic integration testing. | M4 | PLANNED |
-| M6 | E2E & Adversarial Hardening | Pass 100% of E2E tests (M1), perform adversarial coverage verification (Tier 5). | M1, M5 | PLANNED |
+| M2 | Core Auth & File Storage | Implement users.json authentication, hash password storage, ICS/VCF directory layouts. | None | DONE |
+| M3 | CalDAV/CardDAV Server | Implement OPTIONS, PROPFIND, REPORT, PUT, DELETE, MKCOL/MKCALENDAR. | M2 | DONE |
+| M4 | Web Client & Frontend SPA | Develop the modern Glassmorphism frontend UI with session auth and calendar/contact views. | M3 | DONE |
+| M5 | Containerization & Integration | Dockerfile, docker-compose, and homelab stack deployment. | M4 | DONE |
+| M6 | E2E & Adversarial Hardening | Pass 100% of E2E tests (105 passed), security auditor verification. | M1, M5 | DONE |
+| M7 | Advanced Homelab UX & Features | NLP quick add, multi-phone vCard contacts, in-modal calendar creation, VTODO task scheduling, iCal sharing. | M4, M6 | DONE |
 
 ## Interface Contracts
 ### Client ↔ Server DAV
 - **Authentication**: HTTP Basic Auth with credentials matching `data/users.json`.
 - **Endpoint `/dav/`**:
   - `OPTIONS /dav/`: Responds with headers `DAV: 1, 2, 3, addressbook, calendar-access`.
-  - `PROPFIND /dav/`: Queries collections/items.
-  - `REPORT /dav/...`: Calendar queries.
+  - `PROPFIND /dav/`: Queries collections/items and DAV properties.
+  - `REPORT /dav/...`: Calendar queries (`calendar-query`, `multiget`).
   - `PUT /dav/...`: Uploads or updates an event (`.ics`) or contact (`.vcf`).
   - `DELETE /dav/...`: Deletes an event or contact.
-  - `MKCOL` / `MKCALENDAR /dav/...`: Creates standard or specialized collections.
+  - `MKCOL` / `MKCALENDAR /dav/...`: Creates standard addressbooks or calendar collections.
 
 ### Client ↔ Server Web API (for SPA)
-- `POST /api/auth/login`: Session cookie authentication.
-- `POST /api/auth/logout`: Discard session cookie.
-- `GET /api/user/me`: Get current user info.
-- Web client may also use the standard `/dav/` paths using HTTP verbs to manage resources directly.
+- `POST /api/login`: Session cookie authentication.
+- `POST /api/logout`: Discard session cookie.
+- `GET /api/me`: Get current authenticated user info.
+- `GET /api/collections`: List user calendars and addressbooks.
+- `POST /api/collections`: Create new collection.
+- `PATCH /api/collections/{slug}`: Update collection name or color.
+- `DELETE /api/collections/{slug}`: Delete collection.
+- `GET /api/collections/{slug}/items`: List all items with raw contents.
+- `PUT /api/collections/{slug}/items/{filename}`: Save `.ics` or `.vcf`.
+- `DELETE /api/collections/{slug}/items/{filename}`: Delete item.
+- `GET /api/collections/{slug}/export`: Download `.ics` file.
+- `POST /api/collections/{slug}/import`: Upload `.ics` file.
+- `GET /api/collections/{slug}/share`: Get or generate public iCal subscription URL.
+- `DELETE /api/collections/{slug}/share`: Revoke public share link.
+- `GET /api/share/{token}`: Public read-only iCal calendar feed.
 
 ## Code Layout
-- `kayendar/`: Main Python application package.
-  - `__init__.py`: Package initialization.
-  - `__main__.py`: Entry point for starting the server.
-  - `auth.py`: Basic Auth and session authentication logic.
-  - `storage.py`: Local file system interactions (`.ics` / `.vcf` reader/writer).
-  - `dav.py`: CalDAV and CardDAV protocol implementation handler.
-  - `web.py`: SPA endpoints, routing, and serving static assets.
-  - `static/`: Contains HTML, CSS, JS files for the SPA client.
-- `data/`: Storage directory (ignored by git).
-- `tests/`: Test suites.
-  - `e2e/`: E2E test scripts.
-  - `unit/`: Unit tests.
-- `Dockerfile`: Production image.
-- `docker-compose.yml`: Homelab deployment compose file.
-- `.gitignore`: Configured to ignore data and python cache files.
+- `server/`: Main application package.
+  - `__main__.py`: CLI and Uvicorn server entry point.
+  - `app.py`: ASGI application factory with routing and middleware.
+  - `auth.py`: Basic Auth and session verification.
+  - `dav.py`: CalDAV and CardDAV engine.
+  - `storage.py`: Flat-file filesystem manager.
+  - `web.py`: SPA REST API and public feeds.
+  - `static/`: HTML5, CSS3, ES6 JavaScript SPA assets.
+- `Dockerfile`: Production multi-stage lightweight image.
+- `manage.py`: Administrative CLI for user provisioning.
+- `tests/`: 105 automated unit and E2E tests (Tiers 1–4).
+- `data/`: Storage directory (ignored by git, mounted as volume in Docker).

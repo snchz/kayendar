@@ -23,9 +23,16 @@ Kayendar is a simple, lightweight, and self-hosted CalDAV/CardDAV server designe
 ## Features
 
 - 📅 **CalDAV Server** — Full calendar synchronization with iOS, Android (DAVx⁵/OpenSync), Thunderbird, and One Calendar.
-- 📇 **CardDAV Server** — Contact synchronization with standard clients.
-- 🌐 **Modern SPA Web Client** — Gorgeous glassmorphic user interface supporting month/week views, event creation, and contacts management.
+- 📇 **CardDAV Server with Multi-Phone Contacts** — Contact synchronization with standard clients, supporting unlimited categorized phone numbers (Mobile 📱, Work 💼, Home 🏠, Other 📞), multiple emails, and direct click-to-call / click-to-email links.
+- 🌐 **Modern SPA Web Client** — Gorgeous glassmorphic user interface supporting responsive month/week views, event creation, and rich contact management.
+- ⚡ **Natural Language Quick Add** — Create events typing naturally in Spanish or English (e.g., *"Cena mañana 21:00 en Luigi"* or *"Meeting friday 10am"*). Shortcut: `Q`.
+- ➕ **In-Modal Calendar Creation** — Add a new calendar directly from the event creation modal with custom colors, without losing typed event details.
+- 📋 **VTODO Tasks Drawer** — Integrated task manager supporting RFC 5545 VTODO items; drag and drop tasks onto the calendar grid or week slots to schedule them.
+- 📆 **Customizable Week Start** — Toggle between Monday (ISO 8601 default) and Sunday as the first day of the week with instant UI updates.
+- 🔗 **Public iCal Feeds & Data Portability** — Generate token-secured public subscription URLs for external apps, plus one-click `.ics` export and import.
 - 📍 **Enhanced Event Metadata** — Full support for event **Locations** and **Reminders (Alarms)** synchronized bidirectionally.
+- ⌨️ **Keyboard Navigation & Glassmorphic Tooltips** — Full keyboard shortcut support (`?`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) and hover tooltips for every control.
+- 🌐 **Bilingual (ES / EN)** — Dynamic multi-language toggle with instant live interface translation.
 - 🔐 **Secure Authentication** — Basic Authentication for DAV clients and secure session cookies for the web app.
 - 💾 **File-Based Storage** — Flat files (`.ics` for events, `.vcf` for contacts) under a simple directory tree. No complex database to configure or backup!
 - 🐳 **Docker-Ready** — Extremely lightweight Python container, running without heavy dependencies. Perfect for homelab setups (Caddy, Traefik, Dockge, etc.).
@@ -254,9 +261,16 @@ Kayendar es un servidor CalDAV/CardDAV simple, ligero y autoalojado diseñado pa
 ## Características
 
 - 📅 **Servidor CalDAV** — Sincronización completa de calendarios con iOS, Android (DAVx⁵/OpenSync), Thunderbird y One Calendar.
-- 📇 **Servidor CardDAV** — Sincronización de contactos con clientes estándar.
-- 🌐 **Cliente Web SPA Moderno** — Preciosa interfaz de usuario con estilo "glassmorphism" que admite vistas mensuales/semanales, creación de eventos y gestión de contactos.
+- 📇 **Servidor CardDAV con Múltiples Teléfonos** — Sincronización de contactos con clientes estándar, admitiendo números de teléfono ilimitados categorizados (Móvil 📱, Trabajo 💼, Casa 🏠, Otro 📞), múltiples emails y enlaces directos de llamada (`tel:`) y correo (`mailto:`).
+- 🌐 **Cliente Web SPA Moderno** — Preciosa interfaz de usuario con diseño "glassmorphism", vistas mensuales/semanales responsivas con iconos vectoriales y gestión fluida de contactos.
+- ⚡ **Cita Rápida en Lenguaje Natural** — Crea citas redactando de forma intuitiva en español o inglés (ej: *"Cena mañana 21:00 en Luigi"* o *"Meeting friday 10am"*). Atajo: `Q`.
+- ➕ **Creación de Calendarios dentro del Evento** — Añade y personaliza un nuevo calendario directamente desde el formulario de "Nuevo Evento" sin perder los datos que ya habías introducido.
+- 📋 **Panel de Tareas VTODO** — Gestor de tareas integrado con soporte RFC 5545 VTODO; arrastra tareas al calendario mensual o a los bloques horarios semanales para agendarlas.
+- 📆 **Semana Personalizable (Lunes o Domingo)** — Conmuta con un solo clic el primer día de la semana entre Lunes (por defecto ISO 8601) y Domingo.
+- 🔗 **Enlaces Públicos iCal y Portabilidad** — Suscripción segura por URL con token para herramientas externas, además de importación y exportación de archivos `.ics` con un clic.
 - 📍 **Metadatos de Eventos Mejorados** — Soporte completo para **Ubicaciones** y **Recordatorios (Alarmas)** de eventos sincronizados bidireccionalmente.
+- ⌨️ **Navegación por Teclado y Tooltips** — Atajos rápidos (`?`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) e información contextual emergente en cada botón.
+- 🌐 **Soporte Bilingüe (ES / EN)** — Selector interactivo con traducción completa y dinámica de la interfaz en tiempo real.
 - 🔐 **Autenticación Segura** — Autenticación básica (Basic Auth) para clientes DAV y cookies de sesión seguras para la aplicación web.
 - 💾 **Almacenamiento Basado en Archivos** — Archivos planos (`.ics` para eventos, `.vcf` para contactos) bajo un árbol de directorios simple. ¡Sin bases de datos complejas que configurar o respaldar!
 - 🐳 **Listo para Docker** — Contenedor Python extremadamente ligero, que se ejecuta sin dependencias pesadas. Perfecto para entornos domésticos (Caddy, Traefik, Dockge, etc.).

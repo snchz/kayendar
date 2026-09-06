@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/app.css?v=3" />
+  <link rel="stylesheet" href="/assets/app.css?v=4" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#6366f1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -252,8 +252,21 @@
           </div>
         </div>
         <div class="field">
-          <label for="event-calendar" data-i18n="event_calendar">Calendario</label>
+          <div class="field-label-row">
+            <label for="event-calendar" data-i18n="event_calendar">Calendario</label>
+            <button type="button" id="event-new-cal-toggle-btn" class="text-link-btn" data-tooltip="Crear un nuevo calendario" data-i18n-tooltip="tt_create_calendar">
+              + <span data-i18n="create_new_calendar">Crear nuevo</span>
+            </button>
+          </div>
           <select id="event-calendar"></select>
+          <div id="event-inline-cal-box" class="inline-create-box hidden">
+            <div class="inline-create-inputs">
+              <input type="text" id="inline-cal-name" placeholder="Nombre del calendario..." data-i18n-placeholder="cal_name_placeholder" />
+              <input type="color" id="inline-cal-color" value="#6366f1" title="Color" />
+              <button type="button" id="inline-cal-save-btn" class="btn btn-primary btn-sm" data-i18n="create">Crear</button>
+              <button type="button" id="inline-cal-cancel-btn" class="btn btn-ghost btn-sm" data-i18n="cancel">Cancelar</button>
+            </div>
+          </div>
         </div>
         <div class="field">
           <label for="event-location" data-i18n="event_location">Ubicación</label>
@@ -312,8 +325,13 @@
           <input id="contact-email" type="email" placeholder="email@ejemplo.com" />
         </div>
         <div class="field">
-          <label for="contact-phone" data-i18n="contact_phone">Teléfono</label>
-          <input id="contact-phone" type="tel" placeholder="+34 600 000 000" />
+          <div class="field-label-row">
+            <label data-i18n="contact_phone">Teléfonos</label>
+            <button type="button" id="contact-add-phone-btn" class="text-link-btn" data-tooltip="Añadir otro número de teléfono" data-i18n-tooltip="tt_add_phone">
+              + <span data-i18n="add_phone">Añadir teléfono</span>
+            </button>
+          </div>
+          <div id="contact-phones-container" class="contact-phones-list"></div>
         </div>
         <div class="field">
           <label for="contact-addressbook" data-i18n="contact_addressbook">Libreta de contactos</label>
@@ -516,6 +534,6 @@
   <!-- Toast notifications -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="/assets/app.js?v=3"></script>
+  <script src="/assets/app.js?v=4"></script>
 </body>
 </html>
