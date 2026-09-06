@@ -59,7 +59,12 @@ const i18n = {
     add_task_placeholder: '+ Añadir tarea y pulsar Enter...',
     no_tasks: 'No hay tareas pendientes. ¡Añade una arriba!',
     no_contacts: 'No hay contactos aún. ¡Añade tu primer contacto!',
-    no_contacts_found: 'No se encontraron contactos.',
+    no_contacts_yet: 'No hay contactos en esta libreta',
+    no_contacts_found: 'No se encontraron contactos',
+    try_another_search: 'Prueba con otro término de búsqueda.',
+    add_first_contact_desc: 'Añade tu primer contacto para empezar a sincronizar con tus dispositivos.',
+    online_status: 'En línea',
+    contacts_count: 'contactos',
     drag_task_hint: 'Arrastra al calendario para agendar',
     click_hide_cal: 'Clic para ocultar este calendario',
     click_show_cal: 'Clic para mostrar este calendario',
@@ -265,7 +270,12 @@ const i18n = {
     add_task_placeholder: '+ Add a task and press Enter...',
     no_tasks: 'No tasks yet. Add a task above!',
     no_contacts: 'No contacts yet. Add your first contact!',
-    no_contacts_found: 'No contacts found.',
+    no_contacts_yet: 'No contacts in this address book',
+    no_contacts_found: 'No contacts found',
+    try_another_search: 'Try searching for another term.',
+    add_first_contact_desc: 'Add your first contact to start syncing across devices.',
+    online_status: 'Online',
+    contacts_count: 'contacts',
     drag_task_hint: 'Drag to calendar to schedule',
     click_hide_cal: 'Click to hide this calendar',
     click_show_cal: 'Click to show this calendar',
@@ -1190,6 +1200,18 @@ function renderWeekView(grid) {
       eventsArea.appendChild(line);
     }
 
+    // Live Now-Indicator line if today
+    if (isToday) {
+      const now = new Date();
+      const nowH = now.getHours() + now.getMinutes() / 60;
+      const nowTop = Math.round(nowH * 56);
+      const nowLine = document.createElement('div');
+      nowLine.className = 'now-indicator';
+      nowLine.style.top = `${nowTop}px`;
+      nowLine.innerHTML = `<span class="now-dot"></span>`;
+      eventsArea.appendChild(nowLine);
+    }
+
     // Events
     const dayEvents = allEvents().filter(e => e.start && isSameDay(e.start, dayDate));
     dayEvents.forEach(ev => {
@@ -1337,10 +1359,31 @@ function renderContacts() {
     );
   }
 
+  // Update contacts badge in header
+  const badge = document.getElementById('contacts-badge');
+  if (badge) {
+    if (state.selectedAddressbook) {
+      const col = state.collections.find(c => c.slug === state.selectedAddressbook);
+      badge.textContent = `${contacts.length} · ${col ? col.display_name : ''}`;
+      badge.classList.remove('hidden');
+    } else {
+      const total = allContacts().length;
+      badge.textContent = `${total} ${t('contacts_count') || 'contactos'}`;
+      badge.classList.remove('hidden');
+    }
+  }
+
   if (!contacts.length) {
     const empty = document.createElement('div');
-    empty.className = 'contact-empty';
-    empty.textContent = search ? t('no_contacts_found') : t('no_contacts');
+    empty.className = 'empty-state';
+    empty.innerHTML = `
+      <div class="empty-icon">📇</div>
+      <div class="empty-title">${search ? t('no_contacts_found') : t('no_contacts_yet')}</div>
+      <div class="empty-desc">${search ? t('try_another_search') : t('add_first_contact_desc')}</div>
+      ${!search ? `<button type="button" class="btn btn-primary btn-sm" id="empty-add-contact-btn">+ ${t('new_contact')}</button>` : ''}
+    `;
+    const emptyBtn = empty.querySelector('#empty-add-contact-btn');
+    if (emptyBtn) emptyBtn.addEventListener('click', openNewContact);
     grid.appendChild(empty);
     return;
   }
@@ -2076,6 +2119,10 @@ async function initApp() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-screen').classList.remove('hidden');
   document.getElementById('username-display').textContent = state.user;
+  const avatarInit = document.getElementById('user-avatar-initial');
+  if (avatarInit && state.user) {
+    avatarInit.textContent = state.user.charAt(0).toUpperCase();
+  }
 
   await loadAllData();
   renderSidebar();

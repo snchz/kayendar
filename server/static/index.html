@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/app.css?v=4" />
+  <link rel="stylesheet" href="/assets/app.css?v=7" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#6366f1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -131,24 +131,23 @@
         </div>
 
         <div class="sidebar-bottom">
-          <div class="sidebar-footer">
-            <span id="username-display" class="username-display"></span>
-            <div class="sidebar-footer-actions">
-              <button id="week-start-btn" class="icon-btn lang-toggle-btn" data-tooltip="Primer día: Lunes (clic para cambiar a Domingo)" data-i18n-tooltip="tt_week_start_mon" aria-label="First day of week">📅 Lun</button>
-              <button id="lang-btn" class="icon-btn lang-toggle-btn" data-tooltip="Cambiar idioma (ES / EN)" data-i18n-tooltip="tt_lang" aria-label="Language">🌐 ES</button>
-              <button id="connect-device-btn" class="icon-btn" data-tooltip="Sincronizar con iPhone o Android (CalDAV)" data-i18n-tooltip="tt_connect" aria-label="Sync with Phone">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
-                </svg>
-              </button>
-              <button id="sidebar-settings-btn" class="icon-btn" data-tooltip="Configuración y preferencias" data-i18n-tooltip="tt_settings" aria-label="Settings">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <div class="sidebar-user-card">
+            <div class="user-avatar" id="user-avatar">
+              <span id="user-avatar-initial">U</span>
+            </div>
+            <div class="user-info">
+              <span id="username-display" class="username-display"></span>
+              <span class="user-status-label" data-i18n="online_status">En línea</span>
+            </div>
+            <div class="user-actions">
+              <button id="sidebar-settings-btn" class="icon-btn" data-tooltip="Configuración y preferencias (Atajo: ,)" data-i18n-tooltip="tt_settings" aria-label="Settings">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="3"></circle>
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
               </button>
               <button id="logout-btn" class="icon-btn" data-tooltip="Cerrar sesión" data-i18n-tooltip="tt_logout" aria-label="Logout">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
               </button>
@@ -173,20 +172,27 @@
         <div id="view-calendar" class="view active">
           <div class="view-header">
             <div class="view-nav">
-              <button id="cal-prev" class="icon-btn" data-tooltip="Período anterior (Atajo: J o ←)" data-i18n-tooltip="tt_prev">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-              </button>
+              <div class="nav-cluster">
+                <button id="cal-today-btn" class="btn btn-ghost btn-sm nav-today-btn" data-tooltip="Ir al día de hoy (Atajo: T)" data-i18n-tooltip="tt_today">
+                  <span data-i18n="today">Hoy</span>
+                </button>
+                <div class="nav-arrows">
+                  <button id="cal-prev" class="icon-btn icon-btn-sm" data-tooltip="Período anterior (Atajo: J o ←)" data-i18n-tooltip="tt_prev">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <button id="cal-next" class="icon-btn icon-btn-sm" data-tooltip="Período siguiente (Atajo: K o →)" data-i18n-tooltip="tt_next">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
               <h2 id="cal-title" class="view-title"></h2>
-              <button id="cal-next" class="icon-btn" data-tooltip="Período siguiente (Atajo: K o →)" data-i18n-tooltip="tt_next">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
             </div>
             <div class="view-actions">
               <div class="cal-search-box" data-tooltip="Buscar citas por título, lugar o notas (Atajo: /)" data-i18n-tooltip="tt_search_events">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" id="calendar-search" placeholder="Buscar citas..." data-i18n-placeholder="search_events" />
+                <kbd class="search-kbd">/</kbd>
               </div>
-              <button id="cal-today-btn" class="btn btn-ghost" data-tooltip="Ir al día de hoy (Atajo: T)" data-i18n-tooltip="tt_today"><span data-i18n="today">Hoy</span></button>
               <div class="view-toggle">
                 <button id="view-month-btn" class="toggle-btn active" data-view="month" data-tooltip="Vista mensual (Atajo: M)" data-i18n-tooltip="tt_month">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -197,28 +203,20 @@
                   <span data-i18n="week">Semana</span>
                 </button>
               </div>
-              <button id="toggle-tasks-btn" class="btn btn-ghost" data-tooltip="Lista de tareas pendientes VTODO (arrástralas al calendario)" data-i18n-tooltip="tt_tasks">📋 <span data-i18n="tasks">Tareas</span> (<span id="tasks-count">0</span>)</button>
-              <button id="shortcuts-btn" class="icon-btn" data-tooltip="Guía de atajos de teclado y ayuda (Atajo: ?)" data-i18n-tooltip="tt_shortcuts" aria-label="Keyboard Shortcuts">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
-                  <line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/>
-                  <line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/><line x1="14" y1="12" x2="14.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/>
-                  <line x1="7" y1="16" x2="17" y2="16"/>
-                </svg>
+              <button id="toggle-tasks-btn" class="btn btn-ghost btn-sm" data-tooltip="Lista de tareas pendientes VTODO (arrástralas al calendario)" data-i18n-tooltip="tt_tasks">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span data-i18n="tasks">Tareas</span>
+                <span id="tasks-count" class="tasks-count-pill">0</span>
               </button>
-              <button id="settings-btn" class="icon-btn" data-tooltip="Configuración y preferencias (Atajo: ,)" data-i18n-tooltip="tt_settings" aria-label="Settings">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-              </button>
-              <button id="quick-add-btn" class="btn btn-ghost" data-tooltip="Crear cita escribiendo en lenguaje natural (ej: 'Cena mañana 21:00') (Atajo: Q)" data-i18n-tooltip="tt_quick">
+              <button id="quick-add-btn" class="btn btn-ghost btn-sm" data-tooltip="Crear cita en lenguaje natural (ej: 'Cena mañana 21:00') (Atajo: Q)" data-i18n-tooltip="tt_quick">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 <span data-i18n="quick_add">Cita Rápida</span>
+                <kbd class="btn-kbd">Q</kbd>
               </button>
-              <button id="add-event-btn" class="btn btn-primary" data-tooltip="Crear evento con formulario completo (Atajo: C)" data-i18n-tooltip="tt_new_event">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <button id="add-event-btn" class="btn btn-primary btn-sm" data-tooltip="Crear evento con formulario completo (Atajo: C)" data-i18n-tooltip="tt_new_event">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span data-i18n="new_event">Nuevo Evento</span>
+                <kbd class="btn-kbd btn-kbd-primary">C</kbd>
               </button>
             </div>
           </div>
@@ -243,14 +241,18 @@
         <!-- Contacts View -->
         <div id="view-contacts" class="view">
           <div class="view-header">
-            <h2 class="view-title" data-i18n="contacts">Contactos</h2>
+            <div class="view-nav">
+              <h2 class="view-title" data-i18n="contacts">Contactos</h2>
+              <span id="contacts-badge" class="contacts-header-badge hidden"></span>
+            </div>
             <div class="view-actions">
-              <div class="search-box">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <div class="search-box" data-tooltip="Buscar contactos por nombre, empresa, email o teléfono (Atajo: /)" data-i18n-tooltip="tt_search_contacts">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" id="contacts-search" placeholder="Buscar contactos..." data-i18n-placeholder="search_contacts" />
+                <kbd class="search-kbd">/</kbd>
               </div>
-              <button id="add-contact-btn" class="btn btn-primary" data-tooltip="Añadir nuevo contacto a la libreta" data-i18n-tooltip="tt_new_contact">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <button id="add-contact-btn" class="btn btn-primary btn-sm" data-tooltip="Añadir nuevo contacto a la libreta" data-i18n-tooltip="tt_new_contact">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span data-i18n="new_contact">Nuevo Contacto</span>
               </button>
             </div>
@@ -633,6 +635,24 @@
           </button>
         </div>
 
+        <!-- Shortcuts section -->
+        <div class="settings-section">
+          <h4 class="settings-section-title" data-i18n="shortcuts_title">Atajos de Teclado</h4>
+          <div class="settings-shortcuts-grid">
+            <div class="shortcut-chip"><kbd>Q</kbd> <span data-i18n="sc_quick">Cita Rápida</span></div>
+            <div class="shortcut-chip"><kbd>C</kbd> <span data-i18n="sc_new">Nuevo Evento</span></div>
+            <div class="shortcut-chip"><kbd>/</kbd> <span data-i18n="sc_search">Buscar</span></div>
+            <div class="shortcut-chip"><kbd>T</kbd> <span data-i18n="sc_today">Ir a hoy</span></div>
+            <div class="shortcut-chip"><kbd>M</kbd> <span data-i18n="sc_month">Mes</span></div>
+            <div class="shortcut-chip"><kbd>W</kbd> <span data-i18n="sc_week">Semana</span></div>
+            <div class="shortcut-chip"><kbd>J</kbd> / <kbd>&larr;</kbd> <span data-i18n="sc_prev">Anterior</span></div>
+            <div class="shortcut-chip"><kbd>K</kbd> / <kbd>&rarr;</kbd> <span data-i18n="sc_next">Siguiente</span></div>
+            <div class="shortcut-chip"><kbd>,</kbd> <span data-i18n="sc_settings">Ajustes</span></div>
+            <div class="shortcut-chip"><kbd>?</kbd> <span data-i18n="sc_guide">Guía completa</span></div>
+            <div class="shortcut-chip"><kbd>Esc</kbd> <span data-i18n="sc_close">Cerrar ventanas</span></div>
+          </div>
+        </div>
+
         <!-- About section -->
         <div class="settings-section">
           <h4 class="settings-section-title" data-i18n="settings_about">Acerca de</h4>
@@ -666,6 +686,6 @@
   <!-- Toast notifications -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="/assets/app.js?v=6"></script>
+  <script src="/assets/app.js?v=7"></script>
 </body>
 </html>
