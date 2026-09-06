@@ -729,3 +729,136 @@ kbd {
   justify-content: flex-end;
   gap: 6px;
 }
+
+/* ── Calendar Search & Header ── */
+.cal-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 170px;
+}
+.cal-search-box svg {
+  position: absolute;
+  left: 9px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.cal-search-box input {
+  padding: 6px 10px 6px 28px !important;
+  font-size: 12px !important;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+}
+
+/* ── Sidebar Footer Actions & Toggle ── */
+.sidebar-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.collection-item.muted {
+  opacity: 0.45;
+}
+.collection-item.muted .collection-dot {
+  opacity: 0.3;
+}
+.collection-item.muted .collection-name {
+  text-decoration: line-through;
+}
+
+/* ── Quick Add (NLP) Preview ── */
+.hint-text {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.quick-add-preview {
+  background: rgba(99,102,241,0.08);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.preview-row strong {
+  color: var(--accent);
+  margin-right: 6px;
+}
+
+/* ── Connect Devices Modal ── */
+.connect-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 16px;
+}
+.connect-tab-btn {
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.connect-tab-btn:hover {
+  color: var(--text-primary);
+}
+.connect-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.connect-intro {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+.connect-steps {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 18px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.connect-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.connect-box label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.url-copy-row {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── Drag & Drop ── */
+.task-item[draggable="true"] {
+  cursor: grab;
+}
+.task-item.dragging, .week-event.dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
+.week-day-events.drag-over, .cal-day.drag-over {
+  background: rgba(99,102,241,0.12) !important;
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}

@@ -9,6 +9,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/assets/app.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#6366f1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Kayendar" />
+  <link rel="apple-touch-icon" href="/assets/icon-192.svg" />
+  <link rel="icon" type="image/svg+xml" href="/assets/icon-192.svg" />
 </head>
 <body>
   <div id="app">
@@ -115,11 +122,18 @@
 
         <div class="sidebar-footer">
           <span id="username-display" class="username-display"></span>
-          <button id="logout-btn" class="icon-btn" title="Logout">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </button>
+          <div class="sidebar-footer-actions">
+            <button id="connect-device-btn" class="icon-btn" title="Sync with Phone / Connect Device">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+              </svg>
+            </button>
+            <button id="logout-btn" class="icon-btn" title="Logout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -138,6 +152,10 @@
               </button>
             </div>
             <div class="view-actions">
+              <div class="cal-search-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="calendar-search" placeholder="Search events..." />
+              </div>
               <button id="cal-today-btn" class="btn btn-ghost">Today</button>
               <div class="view-toggle">
                 <button id="view-month-btn" class="toggle-btn active" data-view="month">Month</button>
@@ -145,6 +163,7 @@
               </div>
               <button id="toggle-tasks-btn" class="btn btn-ghost" title="Toggle Tasks (VTODO)">📋 Tasks (<span id="tasks-count">0</span>)</button>
               <button id="shortcuts-btn" class="icon-btn" title="Keyboard Shortcuts (?)">⌨️</button>
+              <button id="quick-add-btn" class="btn btn-ghost" title="Quick Add with Natural Language (Q)">⚡ Quick</button>
               <button id="add-event-btn" class="btn btn-primary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 New Event
@@ -351,6 +370,107 @@
     </div>
   </div>
 
+  <!-- Modal: Quick Add (NLP) -->
+  <div id="quick-add-modal" class="modal-overlay hidden">
+    <div class="modal glass" style="width: 460px;">
+      <div class="modal-header">
+        <h3>⚡ Quick Add Event</h3>
+        <button class="icon-btn modal-close" data-modal="quick-add-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="quick-add-form">
+        <div class="field">
+          <label for="quick-add-input">Event description (Spanish or English)</label>
+          <input id="quick-add-input" type="text" placeholder='e.g. "Cena mañana 21:00 en Luigi" or "Meeting friday 10am"' autocomplete="off" required />
+          <small class="hint-text">Supports relative dates (hoy, mañana, monday...), times (10:00, 3pm), and locations (en / at).</small>
+        </div>
+        <div id="quick-add-preview" class="quick-add-preview hidden">
+          <div class="preview-row"><strong>Title:</strong> <span id="qa-prev-title"></span></div>
+          <div class="preview-row"><strong>When:</strong> <span id="qa-prev-time"></span></div>
+          <div class="preview-row" id="qa-prev-loc-row"><strong>Where:</strong> <span id="qa-prev-loc"></span></div>
+        </div>
+        <div class="field">
+          <label for="quick-add-calendar">Calendar</label>
+          <select id="quick-add-calendar"></select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-close" data-modal="quick-add-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Connect Device / Mobile Sync Assistant -->
+  <div id="connect-modal" class="modal-overlay hidden">
+    <div class="modal glass" style="width: 500px;">
+      <div class="modal-header">
+        <h3>📱 Connect Devices (CalDAV &amp; CardDAV)</h3>
+        <button class="icon-btn modal-close" data-modal="connect-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="connect-tabs">
+        <button type="button" class="connect-tab-btn active" data-tab="tab-apple">Apple (iOS / Mac)</button>
+        <button type="button" class="connect-tab-btn" data-tab="tab-android">Android (DAVx⁵)</button>
+        <button type="button" class="connect-tab-btn" data-tab="tab-desktop">Thunderbird / Other</button>
+      </div>
+      <div class="connect-tab-content">
+        <!-- Apple Tab -->
+        <div id="tab-apple" class="connect-pane active">
+          <p class="connect-intro">Sync calendar &amp; contacts with native iPhone, iPad, and Mac apps:</p>
+          <ol class="connect-steps">
+            <li>Go to <strong>Settings &gt; Calendar &gt; Accounts &gt; Add Account &gt; Other</strong>.</li>
+            <li>Select <strong>Add CalDAV Account</strong> (or CardDAV for contacts).</li>
+            <li>Enter your Kayendar username, password, and URL below:</li>
+          </ol>
+          <div class="connect-box">
+            <label>CalDAV URL:</label>
+            <div class="url-copy-row">
+              <input type="text" id="apple-caldav-url" readonly class="share-url-input" />
+              <button type="button" class="btn btn-primary btn-sm copy-btn" data-target="apple-caldav-url">Copy</button>
+            </div>
+          </div>
+          <div class="connect-box">
+            <label>CardDAV (Contacts) URL:</label>
+            <div class="url-copy-row">
+              <input type="text" id="apple-carddav-url" readonly class="share-url-input" />
+              <button type="button" class="btn btn-primary btn-sm copy-btn" data-target="apple-carddav-url">Copy</button>
+            </div>
+          </div>
+        </div>
+        <!-- Android Tab -->
+        <div id="tab-android" class="connect-pane hidden">
+          <p class="connect-intro">Sync seamlessly on Android using <strong>DAVx⁵</strong> (open source):</p>
+          <ol class="connect-steps">
+            <li>Install <strong>DAVx⁵</strong> from F-Droid or Google Play.</li>
+            <li>Tap <strong>+ &gt; Login with URL and user name</strong>.</li>
+            <li>Enter Base URL and your Kayendar username/password:</li>
+          </ol>
+          <div class="connect-box">
+            <label>Base URL:</label>
+            <div class="url-copy-row">
+              <input type="text" id="android-dav-url" readonly class="share-url-input" />
+              <button type="button" class="btn btn-primary btn-sm copy-btn" data-target="android-dav-url">Copy</button>
+            </div>
+          </div>
+        </div>
+        <!-- Desktop Tab -->
+        <div id="tab-desktop" class="connect-pane hidden">
+          <p class="connect-intro">Connect with Mozilla Thunderbird, Apple Calendar, or Linux/Windows apps:</p>
+          <div class="connect-box">
+            <label>Principal CalDAV URL:</label>
+            <div class="url-copy-row">
+              <input type="text" id="desktop-dav-url" readonly class="share-url-input" />
+              <button type="button" class="btn btn-primary btn-sm copy-btn" data-target="desktop-dav-url">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Keyboard Shortcuts -->
   <div id="shortcuts-modal" class="modal-overlay hidden">
     <div class="modal glass" style="width: 360px;">
@@ -361,6 +481,8 @@
         </button>
       </div>
       <div class="shortcuts-list">
+        <div class="shortcut-row"><kbd>Q</kbd> <span>Quick Add (Natural Language)</span></div>
+        <div class="shortcut-row"><kbd>/</kbd> <span>Search Events</span></div>
         <div class="shortcut-row"><kbd>T</kbd> <span>Go to Today</span></div>
         <div class="shortcut-row"><kbd>M</kbd> <span>Month View</span></div>
         <div class="shortcut-row"><kbd>W</kbd> <span>Week View</span></div>

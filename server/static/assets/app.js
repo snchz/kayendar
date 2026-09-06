@@ -45,6 +45,8 @@ const state = {
   events: {},   // slug -> [parsed event objects]
   contacts: {}, // slug -> [parsed contact objects]
   tasks: {},    // slug -> [parsed VTODO objects]
+  visibleCalendars: {}, // slug -> boolean (default true)
+  calendarSearch: '',
   calView: 'month',
   calDate: new Date(),
   activeView: 'calendar',
@@ -251,9 +253,13 @@ function renderSidebar() {
   abList.innerHTML  = '';
 
   for (const col of state.collections) {
+    const isVisible = state.visibleCalendars[col.slug] !== false;
     const el = document.createElement('div');
-    el.className = 'collection-item active';
+    el.className = 'collection-item' + (isVisible ? ' active' : ' muted');
     el.dataset.slug = col.slug;
+    if (col.type === 'calendar') {
+      el.title = isVisible ? 'Click to hide this calendar' : 'Click to show this calendar';
+    }
     el.innerHTML = `
       <span class="collection-dot" style="background:${col.color}"></span>
       <span class="collection-name">${col.display_name}</span>
@@ -263,6 +269,14 @@ function renderSidebar() {
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
       </button>`;
+
+    el.addEventListener('click', (e) => {
+      if (col.type === 'calendar') {
+        state.visibleCalendars[col.slug] = !isVisible;
+        renderSidebar();
+        renderCalendar();
+      }
+    });
 
     el.querySelector('.collection-edit-btn').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -308,6 +322,20 @@ function renderTasks() {
   tasks.forEach(t => {
     const item = document.createElement('div');
     item.className = `task-item ${t.completed ? 'completed' : ''}`;
+    item.setAttribute('draggable', 'true');
+    item.title = 'Drag to calendar to schedule';
+    item.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('application/json', JSON.stringify({
+        type: 'task',
+        uid: t.uid,
+        title: t.title,
+        collectionSlug: t.collectionSlug,
+        filename: t.filename,
+      }));
+      e.dataTransfer.effectAllowed = 'copyMove';
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
 
     const chk = document.createElement('input');
     chk.type = 'checkbox';
@@ -357,7 +385,19 @@ function renderTasks() {
 
 // ── Calendar rendering ───────────────────────────────────────
 function allEvents() {
-  return Object.values(state.events).flat();
+  let list = Object.entries(state.events)
+    .filter(([slug]) => state.visibleCalendars[slug] !== false)
+    .flatMap(([_, evs]) => evs);
+
+  if (state.calendarSearch) {
+    const q = state.calendarSearch.toLowerCase();
+    list = list.filter(e =>
+      (e.title && e.title.toLowerCase().includes(q)) ||
+      (e.location && e.location.toLowerCase().includes(q)) ||
+      (e.description && e.description.toLowerCase().includes(q))
+    );
+  }
+  return list;
 }
 
 function renderCalendar() {
@@ -434,6 +474,24 @@ function createDayCell(date, otherMonth) {
       evEl.style.background = (ev.collectionColor || '#6366f1') + '33';
       evEl.style.color = ev.collectionColor || '#818cf8';
       evEl.title = ev.title;
+      evEl.setAttribute('draggable', 'true');
+      evEl.addEventListener('dragstart', (e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData('application/json', JSON.stringify({
+          type: 'event',
+          uid: ev.uid,
+          title: ev.title,
+          collectionSlug: ev.collectionSlug,
+          filename: ev.filename,
+          start: ev.start,
+          end: ev.end,
+          description: ev.description,
+          location: ev.location,
+          alarm: ev.alarm
+        }));
+        evEl.classList.add('dragging');
+      });
+      evEl.addEventListener('dragend', () => evEl.classList.remove('dragging'));
       evEl.addEventListener('click', e => { e.stopPropagation(); openEditEvent(ev); });
       evContainer.appendChild(evEl);
     });
@@ -445,6 +503,50 @@ function createDayCell(date, otherMonth) {
     }
     cell.appendChild(evContainer);
   }
+
+  // Drag and drop into cell
+  cell.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    cell.classList.add('drag-over');
+  });
+  cell.addEventListener('dragleave', () => {
+    cell.classList.remove('drag-over');
+  });
+  cell.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    cell.classList.remove('drag-over');
+    try {
+      const raw = e.dataTransfer.getData('application/json');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.type === 'task') {
+        const cal = state.collections.find(c => c.type === 'calendar');
+        if (!cal) return;
+        const start = new Date(date); start.setHours(9, 0, 0, 0);
+        const end = new Date(date); end.setHours(10, 0, 0, 0);
+        const uid = generateUid();
+        const content = buildIcs(uid, data.title, start, end);
+        await api.put(`/api/collections/${cal.slug}/items/${uid}.ics`, { content });
+        toast(`Scheduled "${data.title}" on ${date.toLocaleDateString()}`);
+        await loadAllData();
+        renderCalendar();
+      } else if (data.type === 'event') {
+        const origStart = new Date(data.start);
+        const origEnd = new Date(data.end);
+        const newStart = new Date(date);
+        newStart.setHours(origStart.getHours(), origStart.getMinutes(), 0, 0);
+        const dur = origEnd.getTime() - origStart.getTime();
+        const newEnd = new Date(newStart.getTime() + (dur > 0 ? dur : 3600000));
+        const content = buildIcs(data.uid, data.title, newStart, newEnd, data.description || '', data.location || '', data.alarm || '');
+        await api.put(`/api/collections/${data.collectionSlug}/items/${data.filename}`, { content });
+        toast(`Moved "${data.title}" to ${date.toLocaleDateString()}`);
+        await loadAllData();
+        renderCalendar();
+      }
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
 
   cell.addEventListener('click', () => openNewEvent(date));
   return cell;
@@ -523,6 +625,24 @@ function renderWeekView(grid) {
       evEl.style.background = (ev.collectionColor || '#6366f1') + '44';
       evEl.style.color = ev.collectionColor || '#818cf8';
       evEl.style.borderLeft = `3px solid ${ev.collectionColor || '#6366f1'}`;
+      evEl.setAttribute('draggable', 'true');
+      evEl.addEventListener('dragstart', (e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData('application/json', JSON.stringify({
+          type: 'event',
+          uid: ev.uid,
+          title: ev.title,
+          collectionSlug: ev.collectionSlug,
+          filename: ev.filename,
+          start: ev.start,
+          end: ev.end,
+          description: ev.description,
+          location: ev.location,
+          alarm: ev.alarm
+        }));
+        evEl.classList.add('dragging');
+      });
+      evEl.addEventListener('dragend', () => evEl.classList.remove('dragging'));
       evEl.addEventListener('click', () => openEditEvent(ev));
       eventsArea.appendChild(evEl);
     });
@@ -539,6 +659,57 @@ function renderWeekView(grid) {
       timeLine.appendChild(timeDot);
       eventsArea.appendChild(timeLine);
     }
+
+    // Drag and drop into week day slot
+    eventsArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      eventsArea.classList.add('drag-over');
+    });
+    eventsArea.addEventListener('dragleave', () => {
+      eventsArea.classList.remove('drag-over');
+    });
+    eventsArea.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      eventsArea.classList.remove('drag-over');
+      try {
+        const raw = e.dataTransfer.getData('application/json');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        const rect = eventsArea.getBoundingClientRect();
+        const offsetY = Math.max(0, e.clientY - rect.top);
+        const totalMinutes = Math.min(23 * 60 + 45, Math.floor(((offsetY / 56) * 60) / 15) * 15);
+        const hour = Math.floor(totalMinutes / 60);
+        const min = totalMinutes % 60;
+
+        const newStart = new Date(dayDate);
+        newStart.setHours(hour, min, 0, 0);
+
+        if (data.type === 'task') {
+          const cal = state.collections.find(c => c.type === 'calendar');
+          if (!cal) return;
+          const newEnd = new Date(newStart);
+          newEnd.setHours(newStart.getHours() + 1);
+          const uid = generateUid();
+          const content = buildIcs(uid, data.title, newStart, newEnd);
+          await api.put(`/api/collections/${cal.slug}/items/${uid}.ics`, { content });
+          toast(`Scheduled "${data.title}" at ${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`);
+          await loadAllData();
+          renderCalendar();
+        } else if (data.type === 'event') {
+          const origStart = new Date(data.start);
+          const origEnd = new Date(data.end);
+          const dur = origEnd.getTime() - origStart.getTime();
+          const newEnd = new Date(newStart.getTime() + (dur > 0 ? dur : 3600000));
+          const content = buildIcs(data.uid, data.title, newStart, newEnd, data.description || '', data.location || '', data.alarm || '');
+          await api.put(`/api/collections/${data.collectionSlug}/items/${data.filename}`, { content });
+          toast(`Rescheduled to ${newStart.toLocaleDateString([], {weekday: 'short'})} ${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`);
+          await loadAllData();
+          renderCalendar();
+        }
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
 
     col.appendChild(eventsArea);
     col.addEventListener('click', (e) => {
@@ -595,6 +766,160 @@ function renderContacts() {
     card.addEventListener('click', () => openEditContact(c));
     grid.appendChild(card);
   });
+}
+
+// ── Natural Language Quick-Add Parser (ES & EN) ───────────────
+function parseNaturalLanguageEvent(input) {
+  if (!input || !input.trim()) return null;
+  let text = input.trim();
+  let location = '';
+  const now = new Date();
+  let targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0);
+  let timeSet = false;
+
+  // 1. Location: "en [Location]" or "at [Location]"
+  const locMatch = text.match(/(?:\s+(?:en|at)\s+)([^,.]+?)$/i);
+  if (locMatch) {
+    location = locMatch[1].trim();
+    text = text.slice(0, locMatch.index).trim();
+  }
+
+  // 2. Time: e.g. "a las 19:30", "at 5pm", "17:00", "9am", "18h30", "18h"
+  const timeRegex = /(?:\b(?:a\s+las?|at)\s+)?(\d{1,2})(?::(\d{2})|h(\d{2})?|\s*(am|pm))\b|(?:\b(?:a\s+las?|at)\s+)(\d{1,2})\b/i;
+  const tMatch = text.match(timeRegex);
+  if (tMatch) {
+    let h = parseInt(tMatch[1] || tMatch[5], 10);
+    let m = parseInt(tMatch[2] || tMatch[3] || 0, 10);
+    const meridian = (tMatch[4] || '').toLowerCase();
+    if (meridian === 'pm' && h < 12) h += 12;
+    if (meridian === 'am' && h === 12) h = 0;
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+      targetDate.setHours(h, m, 0, 0);
+      timeSet = true;
+      text = text.replace(tMatch[0], ' ').trim();
+    }
+  }
+
+  // 3. Date:
+  // "pasado mañana" / "day after tomorrow"
+  if (/\b(pasado\s+mañana|day\s+after\s+tomorrow)\b/i.test(text)) {
+    targetDate.setDate(now.getDate() + 2);
+    text = text.replace(/\b(pasado\s+mañana|day\s+after\s+tomorrow)\b/gi, ' ').trim();
+  }
+  // "mañana" / "tomorrow"
+  else if (/\b(mañana|tomorrow)\b/i.test(text)) {
+    targetDate.setDate(now.getDate() + 1);
+    text = text.replace(/\b(mañana|tomorrow)\b/gi, ' ').trim();
+  }
+  // "hoy" / "today"
+  else if (/\b(hoy|today)\b/i.test(text)) {
+    targetDate.setDate(now.getDate());
+    text = text.replace(/\b(hoy|today)\b/gi, ' ').trim();
+  }
+  // Weekday: "el lunes", "este viernes", "next monday", etc.
+  else {
+    const dayMap = {
+      domingo: 0, sunday: 0,
+      lunes: 1, monday: 1,
+      martes: 2, tuesday: 2,
+      miercoles: 3, miércoles: 3, wednesday: 3,
+      jueves: 4, thursday: 4,
+      viernes: 5, friday: 5,
+      sabado: 6, sábado: 6, saturday: 6
+    };
+    const dayRegex = /\b(?:el\s+|este\s+|next\s+|on\s+)?(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
+    const dayMatch = text.match(dayRegex);
+    if (dayMatch) {
+      const dayName = dayMatch[1].toLowerCase().replace('é', 'e').replace('á', 'a');
+      const targetDow = dayMap[dayName];
+      if (targetDow !== undefined) {
+        let diff = (targetDow - now.getDay() + 7) % 7;
+        if (diff === 0 && !timeSet) diff = 7;
+        targetDate.setDate(now.getDate() + diff);
+        text = text.replace(dayMatch[0], ' ').trim();
+      }
+    }
+  }
+
+  const title = text.replace(/\s+/g, ' ').trim() || 'Quick Event';
+  const end = new Date(targetDate);
+  end.setHours(targetDate.getHours() + 1);
+
+  return { title, start: targetDate, end, location };
+}
+
+function openQuickAdd() {
+  const form = document.getElementById('quick-add-form');
+  if (!form) return;
+  form.reset();
+  document.getElementById('quick-add-preview').classList.add('hidden');
+  populateCalendarSelect('quick-add-calendar');
+  openModal('quick-add-modal');
+  setTimeout(() => document.getElementById('quick-add-input')?.focus(), 50);
+}
+
+function updateQuickAddPreview() {
+  const input = document.getElementById('quick-add-input').value;
+  const parsed = parseNaturalLanguageEvent(input);
+  const prevBox = document.getElementById('quick-add-preview');
+  if (!parsed || !input.trim()) {
+    prevBox.classList.add('hidden');
+    return;
+  }
+  prevBox.classList.remove('hidden');
+  document.getElementById('qa-prev-title').textContent = parsed.title;
+  document.getElementById('qa-prev-time').textContent = parsed.start.toLocaleString([], {
+    weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+  const locRow = document.getElementById('qa-prev-loc-row');
+  if (parsed.location) {
+    locRow.classList.remove('hidden');
+    document.getElementById('qa-prev-loc').textContent = parsed.location;
+  } else {
+    locRow.classList.add('hidden');
+  }
+}
+
+async function saveQuickAddEvent(e) {
+  e.preventDefault();
+  const input = document.getElementById('quick-add-input').value;
+  const parsed = parseNaturalLanguageEvent(input);
+  if (!parsed) { toast('Could not parse event', 'error'); return; }
+
+  const slug = document.getElementById('quick-add-calendar').value;
+  if (!slug) { toast('Please select a calendar', 'error'); return; }
+
+  const uid = generateUid();
+  const filename = uid + '.ics';
+  const content = buildIcs(uid, parsed.title, parsed.start, parsed.end, '', parsed.location);
+
+  try {
+    await api.put(`/api/collections/${slug}/items/${filename}`, { content });
+    toast(`Created event: "${parsed.title}"`);
+    closeModal('quick-add-modal');
+    await loadAllData();
+    renderCalendar();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ── Connect Device Modal ──────────────────────────────────────
+function openConnectModal() {
+  const origin = window.location.origin;
+  const user = state.user || 'username';
+
+  const appleCal = document.getElementById('apple-caldav-url');
+  const appleCard = document.getElementById('apple-carddav-url');
+  const androidDav = document.getElementById('android-dav-url');
+  const desktopDav = document.getElementById('desktop-dav-url');
+
+  if (appleCal) appleCal.value = `${origin}/dav/`;
+  if (appleCard) appleCard.value = `${origin}/dav/`;
+  if (androidDav) androidDav.value = `${origin}/dav/`;
+  if (desktopDav) desktopDav.value = `${origin}/dav/principals/${user}/`;
+
+  openModal('connect-modal');
 }
 
 // ── Modal helpers ────────────────────────────────────────────
@@ -1171,6 +1496,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Calendar search
+  const calSearch = document.getElementById('calendar-search');
+  if (calSearch) {
+    calSearch.addEventListener('input', (e) => {
+      state.calendarSearch = e.target.value.trim();
+      renderCalendar();
+    });
+  }
+
+  // Quick Add (NLP)
+  const quickAddBtn = document.getElementById('quick-add-btn');
+  if (quickAddBtn) quickAddBtn.addEventListener('click', openQuickAdd);
+
+  const quickAddInput = document.getElementById('quick-add-input');
+  if (quickAddInput) quickAddInput.addEventListener('input', updateQuickAddPreview);
+
+  const quickAddForm = document.getElementById('quick-add-form');
+  if (quickAddForm) quickAddForm.addEventListener('submit', saveQuickAddEvent);
+
+  // Connect Device modal & tabs
+  const connectBtn = document.getElementById('connect-device-btn');
+  if (connectBtn) connectBtn.addEventListener('click', openConnectModal);
+
+  document.querySelectorAll('.connect-tab-btn').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.connect-tab-btn').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.connect-pane').forEach(p => p.classList.add('hidden'));
+      tab.classList.add('active');
+      const targetPane = document.getElementById(tab.dataset.tab);
+      if (targetPane) targetPane.classList.remove('hidden');
+    });
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const input = document.getElementById(btn.dataset.target);
+      if (input) {
+        try {
+          await navigator.clipboard.writeText(input.value);
+        } catch {
+          input.select();
+          document.execCommand('copy');
+        }
+        toast('URL copied to clipboard');
+      }
+    });
+  });
+
   // Contacts search
   document.getElementById('contacts-search').addEventListener('input', renderContacts);
 
@@ -1196,7 +1569,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.activeView !== 'calendar') return;
 
     const key = e.key.toLowerCase();
-    if (key === 't') {
+    if (key === 'q') {
+      e.preventDefault();
+      openQuickAdd();
+    } else if (key === '/') {
+      e.preventDefault();
+      if (calSearch) calSearch.focus();
+    } else if (key === 't') {
       e.preventDefault();
       state.calDate = new Date();
       renderCalendar();
@@ -1232,6 +1611,11 @@ document.addEventListener('DOMContentLoaded', () => {
       openModal('shortcuts-modal');
     }
   });
+
+  // PWA Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
 
   // Boot
   checkAuth();

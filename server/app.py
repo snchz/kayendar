@@ -91,6 +91,12 @@ def create_app() -> FastAPI:
         if request.method not in ("GET", "HEAD"):
             return Response(status_code=404)
 
+        # Allow specific static files directly under STATIC_DIR like manifest.webmanifest, sw.js, favicon.ico
+        candidate = STATIC_DIR / full_path
+        if candidate.is_file() and full_path in ("manifest.webmanifest", "sw.js", "favicon.ico", "robots.txt"):
+            media_type = "application/manifest+json" if full_path.endswith(".webmanifest") else "application/javascript" if full_path.endswith(".js") else None
+            return FileResponse(str(candidate), media_type=media_type)
+
         basename = os.path.basename(full_path)
         if "." in basename and basename != "index.html":
             return Response(status_code=404)
