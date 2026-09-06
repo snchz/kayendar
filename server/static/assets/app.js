@@ -176,6 +176,8 @@ const i18n = {
     tt_add_calendar: 'Añadir nuevo calendario',
     tt_add_addressbook: 'Añadir libreta de contactos',
     tt_lang: 'Cambiar idioma / Switch language (ES / EN)',
+    tt_week_start_mon: 'Primer día: Lunes (clic para cambiar a Domingo)',
+    tt_week_start_sun: 'Primer día: Domingo (clic para cambiar a Lunes)',
     tt_connect: 'Sincronizar con iPhone o Android (CalDAV)',
     tt_logout: 'Cerrar sesión',
     tt_new_contact: 'Añadir nuevo contacto a la libreta',
@@ -343,6 +345,8 @@ const i18n = {
     tt_add_calendar: 'Add new calendar',
     tt_add_addressbook: 'Add new address book',
     tt_lang: 'Switch language / Cambiar idioma (ES / EN)',
+    tt_week_start_mon: 'First day: Monday (click for Sunday)',
+    tt_week_start_sun: 'First day: Sunday (click for Monday)',
     tt_connect: 'Sync with iPhone or Android (CalDAV)',
     tt_logout: 'Log out',
     tt_new_contact: 'Add new contact to address book',
@@ -398,7 +402,20 @@ const state = {
   activeView: 'calendar',
   showTasks: false,
   lang: localStorage.getItem('kayendar_lang') || (navigator.language && navigator.language.startsWith('es') ? 'es' : 'en'),
+  firstDayOfWeek: parseInt(localStorage.getItem('kayendar_first_day') ?? '1', 10), // 1 = Lunes/Monday (default), 0 = Domingo/Sunday
 };
+
+function updateWeekStartBtn() {
+  const btn = document.getElementById('week-start-btn');
+  if (!btn) return;
+  if (state.firstDayOfWeek === 1) {
+    btn.textContent = state.lang === 'en' ? '📅 Mon' : '📅 Lun';
+    btn.setAttribute('data-tooltip', t('tt_week_start_mon'));
+  } else {
+    btn.textContent = state.lang === 'en' ? '📅 Sun' : '📅 Dom';
+    btn.setAttribute('data-tooltip', t('tt_week_start_sun'));
+  }
+}
 
 function setLanguage(lang) {
   if (lang !== 'es' && lang !== 'en') lang = 'es';
@@ -411,6 +428,7 @@ function setLanguage(lang) {
     langBtn.textContent = lang === 'es' ? '🌐 ES' : '🌐 EN';
     langBtn.setAttribute('data-tooltip', t('tt_lang'));
   }
+  updateWeekStartBtn();
 
   // Translate all DOM elements with data-i18n
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -804,13 +822,20 @@ function renderMonthView(grid) {
   document.getElementById('cal-title').textContent =
     new Date(year, month, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 
-  const firstDay = new Date(year, month, 1).getDay();
+  let firstDay = new Date(year, month, 1).getDay();
+  if (state.firstDayOfWeek === 1) {
+    firstDay = (firstDay + 6) % 7;
+  }
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const today = new Date();
 
   const weekdays = document.createElement('div');
   weekdays.className = 'cal-weekdays';
-  (i18n[state.lang]?.weekdays_short || ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']).forEach(d => {
+  let baseWeekdays = i18n[state.lang]?.weekdays_short || ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  if (state.firstDayOfWeek === 1) {
+    baseWeekdays = [...baseWeekdays.slice(1), baseWeekdays[0]];
+  }
+  baseWeekdays.forEach(d => {
     const el = document.createElement('div');
     el.className = 'cal-weekday';
     el.textContent = d;
@@ -951,7 +976,10 @@ function isSameDay(a, b) {
 
 function renderWeekView(grid) {
   const date = state.calDate;
-  const dow = date.getDay();
+  let dow = date.getDay();
+  if (state.firstDayOfWeek === 1) {
+    dow = (dow + 6) % 7;
+  }
   const weekStart = new Date(date); weekStart.setDate(date.getDate() - dow);
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
   const locale = i18n[state.lang]?.locale || 'es-ES';
@@ -1111,6 +1139,11 @@ function renderWeekView(grid) {
   }
 
   grid.appendChild(weekGrid);
+  setTimeout(() => {
+    const currentHour = new Date().getHours();
+    const targetScroll = Math.max(0, (currentHour - 1) * 56);
+    weekGrid.scrollTo({ top: targetScroll, behavior: 'smooth' });
+  }, 20);
 }
 
 // ── Contacts rendering ───────────────────────────────────────
@@ -1781,10 +1814,35 @@ document.addEventListener('DOMContentLoaded', () => {
     state.calDate = new Date(state.calDate);
     renderCalendar();
   });
-  document.getElementById('cal-today-btn').addEventListener('click', () => {
+  function goToToday() {
     state.calDate = new Date();
     renderCalendar();
-  });
+
+    setTimeout(() => {
+      if (state.calView === 'month') {
+        const todayCell = document.querySelector('.cal-day--today');
+        if (todayCell) {
+          todayCell.classList.add('pulse-today');
+          todayCell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          setTimeout(() => todayCell.classList.remove('pulse-today'), 1500);
+        }
+      } else if (state.calView === 'week') {
+        const todayHeader = document.querySelector('.week-day-header.today');
+        if (todayHeader) {
+          todayHeader.classList.add('pulse-today');
+          setTimeout(() => todayHeader.classList.remove('pulse-today'), 1500);
+        }
+        const weekGrid = document.querySelector('.week-grid');
+        if (weekGrid) {
+          const currentHour = new Date().getHours();
+          const targetScroll = Math.max(0, (currentHour - 1) * 56);
+          weekGrid.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        }
+      }
+    }, 20);
+  }
+
+  document.getElementById('cal-today-btn').addEventListener('click', goToToday);
   document.getElementById('view-month-btn').addEventListener('click', () => {
     state.calView = 'month';
     document.getElementById('view-month-btn').classList.add('active');
@@ -1936,6 +1994,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Week start toggle button (Monday / Sunday)
+  const weekStartBtn = document.getElementById('week-start-btn');
+  if (weekStartBtn) {
+    weekStartBtn.addEventListener('click', () => {
+      state.firstDayOfWeek = state.firstDayOfWeek === 1 ? 0 : 1;
+      localStorage.setItem('kayendar_first_day', String(state.firstDayOfWeek));
+      updateWeekStartBtn();
+      renderCalendar();
+    });
+  }
+
   // Language toggle button
   const langBtn = document.getElementById('lang-btn');
   if (langBtn) {
@@ -1977,8 +2046,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (calSearch) calSearch.focus();
     } else if (key === 't') {
       e.preventDefault();
-      state.calDate = new Date();
-      renderCalendar();
+      goToToday();
     } else if (key === 'm') {
       e.preventDefault();
       state.calView = 'month';
