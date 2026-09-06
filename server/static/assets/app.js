@@ -38,7 +38,353 @@ function toast(message, type = 'success') {
   setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; t.style.transition = '0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
 }
 
-// ── State ────────────────────────────────────────────────────
+// ── State & i18n ─────────────────────────────────────────────
+const i18n = {
+  es: {
+    // Nav & General
+    calendar: 'Calendario',
+    contacts: 'Contactos',
+    calendars: 'Calendarios',
+    addressbooks: 'Libretas',
+    today: 'Hoy',
+    month: 'Mes',
+    week: 'Semana',
+    tasks: 'Tareas',
+    tasks_drawer_title: 'Tareas (VTODO)',
+    quick_add: 'Cita Rápida',
+    new_event: 'Nuevo Evento',
+    new_contact: 'Nuevo Contacto',
+    search_events: 'Buscar citas...',
+    search_contacts: 'Buscar contactos...',
+    add_task_placeholder: '+ Añadir tarea y pulsar Enter...',
+    no_tasks: 'No hay tareas pendientes. ¡Añade una arriba!',
+    no_contacts: 'No hay contactos aún. ¡Añade tu primer contacto!',
+    no_contacts_found: 'No se encontraron contactos.',
+    drag_task_hint: 'Arrastra al calendario para agendar',
+    click_hide_cal: 'Clic para ocultar este calendario',
+    click_show_cal: 'Clic para mostrar este calendario',
+    edit: 'Editar',
+    delete: 'Eliminar',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    copy: 'Copiar',
+    revoke: 'Revocar',
+    more_events: '+{n} más',
+    untitled: '(sin título)',
+    confirm_delete_col: '¿Eliminar esta colección y todos sus elementos?',
+
+    // Weekdays & Locale
+    weekdays_short: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+    locale: 'es-ES',
+
+    // Login
+    login_subtitle: 'Tu calendario y contactos personales',
+    username: 'Usuario',
+    clave: 'Contraseña',
+    sign_in: 'Iniciar Sesión',
+    username_placeholder: 'tu-usuario',
+
+    // Modals
+    modal_new_event: 'Nuevo Evento',
+    modal_edit_event: 'Editar Evento',
+    event_title: 'Título',
+    event_start: 'Inicio',
+    event_end: 'Fin',
+    event_calendar: 'Calendario',
+    event_location: 'Ubicación',
+    event_reminder: 'Recordatorio',
+    event_description: 'Descripción',
+    save_event: 'Guardar Evento',
+
+    modal_new_contact: 'Nuevo Contacto',
+    modal_edit_contact: 'Editar Contacto',
+    contact_firstname: 'Nombre',
+    contact_lastname: 'Apellidos',
+    contact_email: 'Correo electrónico',
+    contact_phone: 'Teléfono',
+    contact_addressbook: 'Libreta de contactos',
+    save_contact: 'Guardar Contacto',
+
+    modal_new_cal: 'Nuevo Calendario',
+    modal_new_ab: 'Nueva Libreta',
+    modal_edit_collection: 'Editar Colección',
+    collection_name: 'Nombre',
+    collection_color: 'Color',
+    data_sharing: 'Datos y Compartición',
+    export_ics: '📥 Exportar .ics',
+    import_ics: '📤 Importar .ics',
+    public_link: '🔗 Enlace Público',
+
+    quick_add_title: '⚡ Cita Rápida',
+    quick_add_label: 'Descripción del evento (en español o inglés)',
+    quick_add_placeholder: 'Ej: "Cena mañana 21:00 en Luigi" o "Meeting friday 10am"',
+    quick_add_hint: 'Soporta fechas relativas (hoy, mañana, lunes...), horas (10:00, 3pm) y lugares (en / at).',
+    when: 'Cuándo:',
+    where: 'Dónde:',
+    create_event: 'Crear Cita',
+
+    shortcuts_title: 'Atajos de Teclado',
+    sc_quick: 'Cita Rápida (Lenguaje Natural)',
+    sc_search: 'Buscar Citas',
+    sc_today: 'Ir al día de hoy',
+    sc_month: 'Vista Mensual',
+    sc_week: 'Vista Semanal',
+    sc_prev: 'Período Anterior',
+    sc_next: 'Período Siguiente',
+    sc_new: 'Nuevo Evento',
+    sc_close: 'Cerrar Ventanas',
+    sc_guide: 'Guía de Atajos',
+
+    connect_title: '📱 Conectar Dispositivos (CalDAV y CardDAV)',
+    connect_apple_intro: 'Sincroniza calendario y contactos de forma nativa en iPhone, iPad y Mac:',
+    connect_apple_step1: 'Ve a Ajustes > Calendario > Cuentas > Añadir cuenta > Otra.',
+    connect_apple_step2: 'Selecciona Añadir cuenta CalDAV (o CardDAV para contactos).',
+    connect_apple_step3: 'Introduce tu usuario, contraseña y la URL indicada abajo:',
+    connect_android_intro: 'Sincroniza en Android mediante DAVx⁵ (código abierto):',
+    connect_android_step1: 'Instala DAVx⁵ desde F-Droid o Google Play Store.',
+    connect_android_step2: 'Pulsa + > Iniciar sesión con URL y nombre de usuario.',
+    connect_android_step3: 'Introduce la URL base y tus credenciales de Kayendar:',
+    connect_desktop_intro: 'Conecta con Mozilla Thunderbird, Apple Calendar o clientes de Linux/Windows:',
+    caldav_url: 'URL CalDAV:',
+    carddav_url: 'URL CardDAV (Contactos):',
+    base_url: 'URL Base:',
+    principal_url: 'URL CalDAV Principal:',
+
+    // Reminders
+    reminder_none: 'Ninguno',
+    reminder_pt0s: 'A la hora del evento',
+    reminder_pt5m: '5 minutos antes',
+    reminder_pt15m: '15 minutos antes',
+    reminder_pt30m: '30 minutos antes',
+    reminder_pt1h: '1 hora antes',
+    reminder_pt2h: '2 horas antes',
+    reminder_p1d: '1 día antes',
+
+    // Tooltips
+    tt_shortcuts: 'Guía de atajos de teclado y ayuda (Atajo: ?)',
+    tt_quick: 'Crear cita escribiendo en lenguaje natural (ej: "Cena mañana 21:00") (Atajo: Q)',
+    tt_new_event: 'Crear evento con formulario completo (Atajo: C)',
+    tt_search_events: 'Buscar citas por título, lugar o notas (Atajo: /)',
+    tt_today: 'Ir al día de hoy (Atajo: T)',
+    tt_month: 'Vista mensual (Atajo: M)',
+    tt_week: 'Vista semanal con horas (Atajo: W)',
+    tt_prev: 'Período anterior (Atajo: J o ←)',
+    tt_next: 'Período siguiente (Atajo: K o →)',
+    tt_tasks: 'Lista de tareas pendientes VTODO (arrástralas al calendario)',
+    tt_calendar_nav: 'Ver tu calendario y eventos',
+    tt_contacts_nav: 'Ver tus contactos y libreta',
+    tt_add_calendar: 'Añadir nuevo calendario',
+    tt_add_addressbook: 'Añadir libreta de contactos',
+    tt_lang: 'Cambiar idioma / Switch language (ES / EN)',
+    tt_connect: 'Sincronizar con iPhone o Android (CalDAV)',
+    tt_logout: 'Cerrar sesión',
+    tt_new_contact: 'Añadir nuevo contacto a la libreta',
+    tt_close_tasks: 'Cerrar panel de tareas',
+
+    // Toasts
+    task_deleted: 'Tarea eliminada',
+    task_added: 'Tarea añadida',
+    no_cal_for_task: 'No hay ningún calendario disponible para guardar la tarea',
+    could_not_parse_event: 'No se pudo interpretar el evento',
+    select_calendar: 'Por favor, selecciona un calendario',
+    created_event: 'Cita creada: "{title}"',
+    scheduled_on: 'Agendado "{title}" el {date}',
+    moved_to: 'Movido "{title}" al {date}',
+    rescheduled_to: 'Reprogramado para el {day} a las {time}',
+    title_required: 'El título es obligatorio',
+    name_required: 'El nombre es obligatorio',
+    select_addressbook: 'Por favor, selecciona una libreta',
+    event_saved: 'Evento guardado',
+    event_deleted: 'Evento eliminado',
+    contact_saved: 'Contacto guardado',
+    contact_deleted: 'Contacto eliminado',
+    collection_saved: 'Colección guardada',
+    collection_created: 'Colección creada',
+    collection_deleted: 'Colección eliminada',
+    imported_items: 'Se importaron {n} elementos',
+    share_link_generated: 'Enlace público generado',
+    share_link_copied: 'Enlace copiado al portapapeles',
+    share_link_revoked: 'Enlace público revocado',
+    url_copied: 'URL copiada al portapapeles',
+  },
+  en: {
+    // Nav & General
+    calendar: 'Calendar',
+    contacts: 'Contacts',
+    calendars: 'Calendars',
+    addressbooks: 'Address Books',
+    today: 'Today',
+    month: 'Month',
+    week: 'Week',
+    tasks: 'Tasks',
+    tasks_drawer_title: 'Tasks (VTODO)',
+    quick_add: 'Quick Add',
+    new_event: 'New Event',
+    new_contact: 'New Contact',
+    search_events: 'Search events...',
+    search_contacts: 'Search contacts...',
+    add_task_placeholder: '+ Add a task and press Enter...',
+    no_tasks: 'No tasks yet. Add a task above!',
+    no_contacts: 'No contacts yet. Add your first contact!',
+    no_contacts_found: 'No contacts found.',
+    drag_task_hint: 'Drag to calendar to schedule',
+    click_hide_cal: 'Click to hide this calendar',
+    click_show_cal: 'Click to show this calendar',
+    edit: 'Edit',
+    delete: 'Delete',
+    save: 'Save',
+    cancel: 'Cancel',
+    copy: 'Copy',
+    revoke: 'Revoke',
+    more_events: '+{n} more',
+    untitled: '(untitled)',
+    confirm_delete_col: 'Delete this collection and all its items?',
+
+    // Weekdays & Locale
+    weekdays_short: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    locale: 'en-US',
+
+    // Login
+    login_subtitle: 'Your personal calendar & contacts',
+    username: 'Username',
+    clave: 'Password',
+    sign_in: 'Sign In',
+    username_placeholder: 'your-username',
+
+    // Modals
+    modal_new_event: 'New Event',
+    modal_edit_event: 'Edit Event',
+    event_title: 'Title',
+    event_start: 'Start',
+    event_end: 'End',
+    event_calendar: 'Calendar',
+    event_location: 'Location',
+    event_reminder: 'Reminder',
+    event_description: 'Description',
+    save_event: 'Save Event',
+
+    modal_new_contact: 'New Contact',
+    modal_edit_contact: 'Edit Contact',
+    contact_firstname: 'First name',
+    contact_lastname: 'Last name',
+    contact_email: 'Email',
+    contact_phone: 'Phone',
+    contact_addressbook: 'Address Book',
+    save_contact: 'Save Contact',
+
+    modal_new_cal: 'New Calendar',
+    modal_new_ab: 'New Address Book',
+    modal_edit_collection: 'Edit Collection',
+    collection_name: 'Name',
+    collection_color: 'Color',
+    data_sharing: 'Data & Sharing',
+    export_ics: '📥 Export .ics',
+    import_ics: '📤 Import .ics',
+    public_link: '🔗 Public Link',
+
+    quick_add_title: '⚡ Quick Add Event',
+    quick_add_label: 'Event description (Spanish or English)',
+    quick_add_placeholder: 'e.g. "Meeting friday 10am" or "Cena mañana 21:00 en Luigi"',
+    quick_add_hint: 'Supports relative dates (today, tomorrow, monday...), times (10:00, 3pm), and locations (at / en).',
+    when: 'When:',
+    where: 'Where:',
+    create_event: 'Create Event',
+
+    shortcuts_title: 'Keyboard Shortcuts',
+    sc_quick: 'Quick Add (Natural Language)',
+    sc_search: 'Search Events',
+    sc_today: 'Go to Today',
+    sc_month: 'Month View',
+    sc_week: 'Week View',
+    sc_prev: 'Previous Period',
+    sc_next: 'Next Period',
+    sc_new: 'New Event',
+    sc_close: 'Close Modals',
+    sc_guide: 'Shortcuts Guide',
+
+    connect_title: '📱 Connect Devices (CalDAV & CardDAV)',
+    connect_apple_intro: 'Sync calendar & contacts with native iPhone, iPad, and Mac apps:',
+    connect_apple_step1: 'Go to Settings > Calendar > Accounts > Add Account > Other.',
+    connect_apple_step2: 'Select Add CalDAV Account (or CardDAV for contacts).',
+    connect_apple_step3: 'Enter your Kayendar username, password, and URL below:',
+    connect_android_intro: 'Sync seamlessly on Android using DAVx⁵ (open source):',
+    connect_android_step1: 'Install DAVx⁵ from F-Droid or Google Play.',
+    connect_android_step2: 'Tap + > Login with URL and user name.',
+    connect_android_step3: 'Enter Base URL and your Kayendar username/password:',
+    connect_desktop_intro: 'Connect with Mozilla Thunderbird, Apple Calendar, or Linux/Windows apps:',
+    caldav_url: 'CalDAV URL:',
+    carddav_url: 'CardDAV (Contacts) URL:',
+    base_url: 'Base URL:',
+    principal_url: 'Principal CalDAV URL:',
+
+    // Reminders
+    reminder_none: 'None',
+    reminder_pt0s: 'At time of event',
+    reminder_pt5m: '5 minutes before',
+    reminder_pt15m: '15 minutes before',
+    reminder_pt30m: '30 minutes before',
+    reminder_pt1h: '1 hour before',
+    reminder_pt2h: '2 hours before',
+    reminder_p1d: '1 day before',
+
+    // Tooltips
+    tt_shortcuts: 'Keyboard shortcuts & help (Shortcut: ?)',
+    tt_quick: 'Quick Add with natural language (e.g. "Meeting friday 10am") (Shortcut: Q)',
+    tt_new_event: 'New event with full form (Shortcut: C)',
+    tt_search_events: 'Search events by title, location or notes (Shortcut: /)',
+    tt_today: 'Go to today (Shortcut: T)',
+    tt_month: 'Month view (Shortcut: M)',
+    tt_week: 'Week view with hourly slots (Shortcut: W)',
+    tt_prev: 'Previous period (Shortcut: J or ←)',
+    tt_next: 'Next period (Shortcut: K or →)',
+    tt_tasks: 'Pending tasks list VTODO (drag to calendar to schedule)',
+    tt_calendar_nav: 'View your calendar and events',
+    tt_contacts_nav: 'View your contacts and address book',
+    tt_add_calendar: 'Add new calendar',
+    tt_add_addressbook: 'Add new address book',
+    tt_lang: 'Switch language / Cambiar idioma (ES / EN)',
+    tt_connect: 'Sync with iPhone or Android (CalDAV)',
+    tt_logout: 'Log out',
+    tt_new_contact: 'Add new contact to address book',
+    tt_close_tasks: 'Close tasks drawer',
+
+    // Toasts
+    task_deleted: 'Task deleted',
+    task_added: 'Task added',
+    no_cal_for_task: 'No calendar available to store task',
+    could_not_parse_event: 'Could not parse event',
+    select_calendar: 'Please select a calendar',
+    created_event: 'Created event: "{title}"',
+    scheduled_on: 'Scheduled "{title}" on {date}',
+    moved_to: 'Moved "{title}" to {date}',
+    rescheduled_to: 'Rescheduled to {day} at {time}',
+    title_required: 'Title is required',
+    name_required: 'Name is required',
+    select_addressbook: 'Please select an address book',
+    event_saved: 'Event saved',
+    event_deleted: 'Event deleted',
+    contact_saved: 'Contact saved',
+    contact_deleted: 'Contact deleted',
+    collection_saved: 'Collection updated',
+    collection_created: 'Collection created',
+    collection_deleted: 'Collection deleted',
+    imported_items: 'Imported {n} items',
+    share_link_generated: 'Public share link generated',
+    share_link_copied: 'Share link copied to clipboard',
+    share_link_revoked: 'Share link revoked',
+    url_copied: 'URL copied to clipboard',
+  }
+};
+
+function t(key, params = {}) {
+  const currentLang = state.lang in i18n ? state.lang : 'es';
+  let str = i18n[currentLang]?.[key] ?? i18n.es[key] ?? key;
+  for (const [k, v] of Object.entries(params)) {
+    str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+  }
+  return str;
+}
+
 const state = {
   user: null,
   collections: [],
@@ -51,7 +397,50 @@ const state = {
   calDate: new Date(),
   activeView: 'calendar',
   showTasks: false,
+  lang: localStorage.getItem('kayendar_lang') || (navigator.language && navigator.language.startsWith('es') ? 'es' : 'en'),
 };
+
+function setLanguage(lang) {
+  if (lang !== 'es' && lang !== 'en') lang = 'es';
+  state.lang = lang;
+  localStorage.setItem('kayendar_lang', lang);
+  document.documentElement.lang = lang;
+
+  const langBtn = document.getElementById('lang-btn');
+  if (langBtn) {
+    langBtn.textContent = lang === 'es' ? '🌐 ES' : '🌐 EN';
+    langBtn.setAttribute('data-tooltip', t('tt_lang'));
+  }
+
+  // Translate all DOM elements with data-i18n
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (k) el.textContent = t(k);
+  });
+
+  // Translate all input placeholders with data-i18n-placeholder
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const k = el.getAttribute('data-i18n-placeholder');
+    if (k) el.placeholder = t(k);
+  });
+
+  // Translate all elements with data-i18n-tooltip
+  document.querySelectorAll('[data-i18n-tooltip]').forEach(el => {
+    const k = el.getAttribute('data-i18n-tooltip');
+    if (k) el.setAttribute('data-tooltip', t(k));
+  });
+
+  // Re-render views if initialized
+  if (state.user) {
+    renderSidebar();
+    if (state.activeView === 'calendar') {
+      renderCalendar();
+    } else if (state.activeView === 'contacts') {
+      renderContacts();
+    }
+    renderTasks();
+  }
+}
 
 // ── iCal helpers ─────────────────────────────────────────────
 function parseIcs(content) {
@@ -258,12 +647,12 @@ function renderSidebar() {
     el.className = 'collection-item' + (isVisible ? ' active' : ' muted');
     el.dataset.slug = col.slug;
     if (col.type === 'calendar') {
-      el.title = isVisible ? 'Click to hide this calendar' : 'Click to show this calendar';
+      el.title = isVisible ? t('click_hide_cal') : t('click_show_cal');
     }
     el.innerHTML = `
       <span class="collection-dot" style="background:${col.color}"></span>
       <span class="collection-name">${col.display_name}</span>
-      <button class="collection-edit-btn" data-slug="${col.slug}" title="Edit">
+      <button class="collection-edit-btn" data-slug="${col.slug}" title="${t('edit')}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -311,7 +700,7 @@ function renderTasks() {
   if (!tasks.length) {
     const empty = document.createElement('div');
     empty.className = 'task-empty';
-    empty.textContent = 'No tasks yet. Add a task above!';
+    empty.textContent = t('no_tasks');
     list.appendChild(empty);
     return;
   }
@@ -319,18 +708,18 @@ function renderTasks() {
   // Sort: incomplete first, completed last
   tasks.sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1));
 
-  tasks.forEach(t => {
+  tasks.forEach(tItem => {
     const item = document.createElement('div');
-    item.className = `task-item ${t.completed ? 'completed' : ''}`;
+    item.className = `task-item ${tItem.completed ? 'completed' : ''}`;
     item.setAttribute('draggable', 'true');
-    item.title = 'Drag to calendar to schedule';
+    item.title = t('drag_task_hint');
     item.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('application/json', JSON.stringify({
         type: 'task',
-        uid: t.uid,
-        title: t.title,
-        collectionSlug: t.collectionSlug,
-        filename: t.filename,
+        uid: tItem.uid,
+        title: tItem.title,
+        collectionSlug: tItem.collectionSlug,
+        filename: tItem.filename,
       }));
       e.dataTransfer.effectAllowed = 'copyMove';
       item.classList.add('dragging');
@@ -340,23 +729,23 @@ function renderTasks() {
     const chk = document.createElement('input');
     chk.type = 'checkbox';
     chk.className = 'task-checkbox';
-    chk.checked = !!t.completed;
+    chk.checked = !!tItem.completed;
 
     const titleSpan = document.createElement('span');
-    titleSpan.className = `task-title ${t.completed ? 'completed' : ''}`;
-    titleSpan.textContent = t.title || '(untitled)';
+    titleSpan.className = `task-title ${tItem.completed ? 'completed' : ''}`;
+    titleSpan.textContent = tItem.title || t('untitled');
 
     const delBtn = document.createElement('button');
     delBtn.className = 'task-delete-btn';
-    delBtn.title = 'Delete task';
+    delBtn.title = t('delete');
     delBtn.innerHTML = '&times;';
 
     chk.addEventListener('change', async () => {
       try {
         const newCompleted = chk.checked;
-        const content = buildTodoIcs(t.uid, t.title, newCompleted);
-        await api.put(`/api/collections/${t.collectionSlug}/items/${t.filename}`, { content });
-        t.completed = newCompleted;
+        const content = buildTodoIcs(tItem.uid, tItem.title, newCompleted);
+        await api.put(`/api/collections/${tItem.collectionSlug}/items/${tItem.filename}`, { content });
+        tItem.completed = newCompleted;
         renderTasks();
       } catch (err) {
         toast(err.message, 'error');
@@ -367,8 +756,8 @@ function renderTasks() {
     delBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       try {
-        await api.delete(`/api/collections/${t.collectionSlug}/items/${t.filename}`);
-        toast('Task deleted');
+        await api.delete(`/api/collections/${tItem.collectionSlug}/items/${tItem.filename}`);
+        toast(t('task_deleted'));
         await loadAllData();
         renderTasks();
       } catch (err) {
@@ -411,8 +800,9 @@ function renderCalendar() {
 function renderMonthView(grid) {
   const date = state.calDate;
   const year = date.getFullYear(), month = date.getMonth();
+  const locale = i18n[state.lang]?.locale || 'es-ES';
   document.getElementById('cal-title').textContent =
-    new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    new Date(year, month, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month+1, 0).getDate();
@@ -420,7 +810,7 @@ function renderMonthView(grid) {
 
   const weekdays = document.createElement('div');
   weekdays.className = 'cal-weekdays';
-  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+  (i18n[state.lang]?.weekdays_short || ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']).forEach(d => {
     const el = document.createElement('div');
     el.className = 'cal-weekday';
     el.textContent = d;
@@ -470,7 +860,7 @@ function createDayCell(date, otherMonth) {
     show.forEach(ev => {
       const evEl = document.createElement('div');
       evEl.className = 'cal-event';
-      evEl.textContent = ev.title || '(no title)';
+      evEl.textContent = ev.title || t('untitled');
       evEl.style.background = (ev.collectionColor || '#6366f1') + '33';
       evEl.style.color = ev.collectionColor || '#818cf8';
       evEl.title = ev.title;
@@ -498,7 +888,7 @@ function createDayCell(date, otherMonth) {
     if (dayEvents.length > 3) {
       const more = document.createElement('div');
       more.className = 'cal-more';
-      more.textContent = `+${dayEvents.length - 3} more`;
+      more.textContent = t('more_events', { n: dayEvents.length - 3 });
       evContainer.appendChild(more);
     }
     cell.appendChild(evContainer);
@@ -519,6 +909,7 @@ function createDayCell(date, otherMonth) {
       const raw = e.dataTransfer.getData('application/json');
       if (!raw) return;
       const data = JSON.parse(raw);
+      const loc = i18n[state.lang]?.locale || 'es-ES';
       if (data.type === 'task') {
         const cal = state.collections.find(c => c.type === 'calendar');
         if (!cal) return;
@@ -527,7 +918,7 @@ function createDayCell(date, otherMonth) {
         const uid = generateUid();
         const content = buildIcs(uid, data.title, start, end);
         await api.put(`/api/collections/${cal.slug}/items/${uid}.ics`, { content });
-        toast(`Scheduled "${data.title}" on ${date.toLocaleDateString()}`);
+        toast(t('scheduled_on', { title: data.title, date: date.toLocaleDateString(loc) }));
         await loadAllData();
         renderCalendar();
       } else if (data.type === 'event') {
@@ -539,7 +930,7 @@ function createDayCell(date, otherMonth) {
         const newEnd = new Date(newStart.getTime() + (dur > 0 ? dur : 3600000));
         const content = buildIcs(data.uid, data.title, newStart, newEnd, data.description || '', data.location || '', data.alarm || '');
         await api.put(`/api/collections/${data.collectionSlug}/items/${data.filename}`, { content });
-        toast(`Moved "${data.title}" to ${date.toLocaleDateString()}`);
+        toast(t('moved_to', { title: data.title, date: date.toLocaleDateString(loc) }));
         await loadAllData();
         renderCalendar();
       }
@@ -563,9 +954,10 @@ function renderWeekView(grid) {
   const dow = date.getDay();
   const weekStart = new Date(date); weekStart.setDate(date.getDate() - dow);
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+  const locale = i18n[state.lang]?.locale || 'es-ES';
 
   document.getElementById('cal-title').textContent =
-    `${weekStart.toLocaleDateString('en-US', {month:'short', day:'numeric'})} – ${weekEnd.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}`;
+    `${weekStart.toLocaleDateString(locale, {month:'short', day:'numeric'})} – ${weekEnd.toLocaleDateString(locale, {month:'short', day:'numeric', year:'numeric'})}`;
 
   const today = new Date();
   const weekGrid = document.createElement('div');
@@ -595,7 +987,7 @@ function renderWeekView(grid) {
 
     const header = document.createElement('div');
     header.className = 'week-day-header' + (isToday ? ' today' : '');
-    header.textContent = dayDate.toLocaleDateString('en-US', {weekday:'short', day:'numeric'});
+    header.textContent = dayDate.toLocaleDateString(locale, {weekday:'short', day:'numeric'});
     col.appendChild(header);
 
     const eventsArea = document.createElement('div');
@@ -619,7 +1011,7 @@ function renderWeekView(grid) {
 
       const evEl = document.createElement('div');
       evEl.className = 'week-event';
-      evEl.textContent = ev.title || '(no title)';
+      evEl.textContent = ev.title || t('untitled');
       evEl.style.top = `${top}px`;
       evEl.style.height = `${height}px`;
       evEl.style.background = (ev.collectionColor || '#6366f1') + '44';
@@ -692,7 +1084,7 @@ function renderWeekView(grid) {
           const uid = generateUid();
           const content = buildIcs(uid, data.title, newStart, newEnd);
           await api.put(`/api/collections/${cal.slug}/items/${uid}.ics`, { content });
-          toast(`Scheduled "${data.title}" at ${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`);
+          toast(t('scheduled_on', { title: data.title, date: `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}` }));
           await loadAllData();
           renderCalendar();
         } else if (data.type === 'event') {
@@ -702,7 +1094,7 @@ function renderWeekView(grid) {
           const newEnd = new Date(newStart.getTime() + (dur > 0 ? dur : 3600000));
           const content = buildIcs(data.uid, data.title, newStart, newEnd, data.description || '', data.location || '', data.alarm || '');
           await api.put(`/api/collections/${data.collectionSlug}/items/${data.filename}`, { content });
-          toast(`Rescheduled to ${newStart.toLocaleDateString([], {weekday: 'short'})} ${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`);
+          toast(t('rescheduled_to', { day: newStart.toLocaleDateString(locale, {weekday: 'short'}), time: `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}` }));
           await loadAllData();
           renderCalendar();
         }
@@ -744,7 +1136,7 @@ function renderContacts() {
   if (!contacts.length) {
     const empty = document.createElement('div');
     empty.className = 'contact-empty';
-    empty.textContent = search ? 'No contacts found.' : 'No contacts yet. Add your first contact!';
+    empty.textContent = search ? t('no_contacts_found') : t('no_contacts');
     grid.appendChild(empty);
     return;
   }
@@ -884,10 +1276,10 @@ async function saveQuickAddEvent(e) {
   e.preventDefault();
   const input = document.getElementById('quick-add-input').value;
   const parsed = parseNaturalLanguageEvent(input);
-  if (!parsed) { toast('Could not parse event', 'error'); return; }
+  if (!parsed) { toast(t('could_not_parse_event'), 'error'); return; }
 
   const slug = document.getElementById('quick-add-calendar').value;
-  if (!slug) { toast('Please select a calendar', 'error'); return; }
+  if (!slug) { toast(t('select_calendar'), 'error'); return; }
 
   const uid = generateUid();
   const filename = uid + '.ics';
@@ -895,7 +1287,7 @@ async function saveQuickAddEvent(e) {
 
   try {
     await api.put(`/api/collections/${slug}/items/${filename}`, { content });
-    toast(`Created event: "${parsed.title}"`);
+    toast(t('created_event', { title: parsed.title }));
     closeModal('quick-add-modal');
     await loadAllData();
     renderCalendar();
@@ -934,7 +1326,7 @@ function closeModal(id) {
 function openNewEvent(date) {
   const form = document.getElementById('event-form');
   form.reset();
-  document.getElementById('event-modal-title').textContent = 'New Event';
+  document.getElementById('event-modal-title').textContent = t('modal_new_event');
   document.getElementById('event-uid').value = '';
   document.getElementById('event-filename').value = '';
   document.getElementById('event-collection').value = '';
@@ -953,7 +1345,7 @@ function openNewEvent(date) {
 }
 
 function openEditEvent(ev) {
-  document.getElementById('event-modal-title').textContent = 'Edit Event';
+  document.getElementById('event-modal-title').textContent = t('modal_edit_event');
   document.getElementById('event-uid').value = ev.uid || '';
   document.getElementById('event-filename').value = ev.filename || '';
   document.getElementById('event-collection').value = ev.collectionSlug || '';
@@ -1025,8 +1417,8 @@ async function saveEvent(e) {
   let uid     = document.getElementById('event-uid').value;
   let filename = document.getElementById('event-filename').value;
 
-  if (!title) { toast('Title is required', 'error'); return; }
-  if (!slug)  { toast('Please select a calendar', 'error'); return; }
+  if (!title) { toast(t('title_required'), 'error'); return; }
+  if (!slug)  { toast(t('select_calendar'), 'error'); return; }
 
   if (!uid) uid = generateUid();
   if (!filename) filename = uid + '.ics';
@@ -1035,7 +1427,7 @@ async function saveEvent(e) {
 
   try {
     await api.put(`/api/collections/${slug}/items/${filename}`, { content });
-    toast('Event saved');
+    toast(t('event_saved'));
     closeModal('event-modal');
     await loadAllData();
     renderCalendar();
@@ -1050,7 +1442,7 @@ async function deleteEvent() {
   if (!filename) return;
   try {
     await api.delete(`/api/collections/${slug}/items/${filename}`);
-    toast('Event deleted');
+    toast(t('event_deleted'));
     closeModal('event-modal');
     await loadAllData();
     renderCalendar();
@@ -1062,7 +1454,7 @@ async function deleteEvent() {
 // ── Contact modal ─────────────────────────────────────────────
 function openNewContact() {
   document.getElementById('contact-form').reset();
-  document.getElementById('contact-modal-title').textContent = 'New Contact';
+  document.getElementById('contact-modal-title').textContent = t('modal_new_contact');
   document.getElementById('contact-uid').value = '';
   document.getElementById('contact-filename').value = '';
   document.getElementById('contact-collection').value = '';
@@ -1072,7 +1464,7 @@ function openNewContact() {
 }
 
 function openEditContact(c) {
-  document.getElementById('contact-modal-title').textContent = 'Edit Contact';
+  document.getElementById('contact-modal-title').textContent = t('modal_edit_contact');
   document.getElementById('contact-uid').value = c.uid || '';
   document.getElementById('contact-filename').value = c.filename || '';
   document.getElementById('contact-collection').value = c.collectionSlug || '';
@@ -1095,8 +1487,8 @@ async function saveContact(e) {
   let uid      = document.getElementById('contact-uid').value;
   let filename = document.getElementById('contact-filename').value;
 
-  if (!lastName && !firstName) { toast('Name is required', 'error'); return; }
-  if (!slug) { toast('Please select an address book', 'error'); return; }
+  if (!lastName && !firstName) { toast(t('name_required'), 'error'); return; }
+  if (!slug) { toast(t('select_addressbook'), 'error'); return; }
 
   if (!uid) uid = generateUid();
   if (!filename) filename = uid + '.vcf';
@@ -1105,7 +1497,7 @@ async function saveContact(e) {
 
   try {
     await api.put(`/api/collections/${slug}/items/${filename}`, { content });
-    toast('Contact saved');
+    toast(t('contact_saved'));
     closeModal('contact-modal');
     await loadAllData();
     renderContacts();
@@ -1120,7 +1512,7 @@ async function deleteContact() {
   if (!filename) return;
   try {
     await api.delete(`/api/collections/${slug}/items/${filename}`);
-    toast('Contact deleted');
+    toast(t('contact_deleted'));
     closeModal('contact-modal');
     await loadAllData();
     renderContacts();
@@ -1132,7 +1524,7 @@ async function deleteContact() {
 // ── Collection modal ──────────────────────────────────────────
 function openNewCollection(type) {
   document.getElementById('collection-form').reset();
-  document.getElementById('collection-modal-title').textContent = type === 'calendar' ? 'New Calendar' : 'New Address Book';
+  document.getElementById('collection-modal-title').textContent = type === 'calendar' ? t('modal_new_cal') : t('modal_new_ab');
   document.getElementById('col-type').value = type;
   document.getElementById('col-slug').value = '';
   document.getElementById('col-color').value = type === 'calendar' ? '#6366f1' : '#10b981';
@@ -1145,7 +1537,7 @@ function openNewCollection(type) {
 }
 
 async function openEditCollection(col) {
-  document.getElementById('collection-modal-title').textContent = 'Edit Collection';
+  document.getElementById('collection-modal-title').textContent = t('modal_edit_collection');
   document.getElementById('col-name').value  = col.display_name;
   document.getElementById('col-color').value = col.color;
   document.getElementById('col-type').value  = col.type;
@@ -1191,7 +1583,7 @@ async function openEditCollection(col) {
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data?.error || 'Import failed');
-          toast(`Imported ${data.imported || 0} items`);
+          toast(t('imported_items', { n: data.imported || 0 }));
           closeModal('collection-modal');
           await loadAllData();
           renderCalendar();
@@ -1209,7 +1601,7 @@ async function openEditCollection(col) {
           const s = await api.post(`/api/collections/${col.slug}/share`, {});
           if (shareBox) shareBox.classList.remove('hidden');
           if (shareUrlInput) shareUrlInput.value = window.location.origin + s.url;
-          toast('Public share link generated');
+          toast(t('share_link_generated'));
         } catch (err) {
           toast(err.message, 'error');
         }
@@ -1221,11 +1613,11 @@ async function openEditCollection(col) {
       copyBtn.onclick = async () => {
         try {
           await navigator.clipboard.writeText(shareUrlInput.value);
-          toast('Share link copied to clipboard');
+          toast(t('share_link_copied'));
         } catch {
           shareUrlInput.select();
           document.execCommand('copy');
-          toast('Share link copied to clipboard');
+          toast(t('share_link_copied'));
         }
       };
     }
@@ -1237,7 +1629,7 @@ async function openEditCollection(col) {
           await api.delete(`/api/collections/${col.slug}/share`);
           if (shareBox) shareBox.classList.add('hidden');
           if (shareUrlInput) shareUrlInput.value = '';
-          toast('Share link revoked');
+          toast(t('share_link_revoked'));
         } catch (err) {
           toast(err.message, 'error');
         }
@@ -1258,15 +1650,15 @@ async function saveCollection(e) {
   const type  = document.getElementById('col-type').value;
   const slug  = document.getElementById('col-slug').value;
 
-  if (!name) { toast('Name is required', 'error'); return; }
+  if (!name) { toast(t('name_required'), 'error'); return; }
 
   try {
     if (slug) {
       await api.patch(`/api/collections/${slug}`, { display_name: name, color });
-      toast('Collection updated');
+      toast(t('collection_saved'));
     } else {
       await api.post('/api/collections', { display_name: name, color, type });
-      toast('Collection created');
+      toast(t('collection_created'));
     }
     closeModal('collection-modal');
     await loadAllData();
@@ -1280,10 +1672,10 @@ async function saveCollection(e) {
 async function deleteCollection() {
   const slug = document.getElementById('col-slug').value;
   if (!slug) return;
-  if (!confirm('Delete this collection and all its items?')) return;
+  if (!confirm(t('confirm_delete_col'))) return;
   try {
     await api.delete(`/api/collections/${slug}`);
-    toast('Collection deleted');
+    toast(t('collection_deleted'));
     closeModal('collection-modal');
     await loadAllData();
     renderSidebar();
@@ -1443,7 +1835,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const cal = state.collections.find(c => c.type === 'calendar');
       if (!cal) {
-        toast('No calendar available to store task', 'error');
+        toast(t('no_cal_for_task'), 'error');
         return;
       }
 
@@ -1456,7 +1848,7 @@ document.addEventListener('DOMContentLoaded', () => {
         input.value = '';
         await loadAllData();
         renderTasks();
-        toast('Task added');
+        toast(t('task_added'));
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -1539,10 +1931,18 @@ document.addEventListener('DOMContentLoaded', () => {
           input.select();
           document.execCommand('copy');
         }
-        toast('URL copied to clipboard');
+        toast(t('url_copied'));
       }
     });
   });
+
+  // Language toggle button
+  const langBtn = document.getElementById('lang-btn');
+  if (langBtn) {
+    langBtn.addEventListener('click', () => {
+      setLanguage(state.lang === 'es' ? 'en' : 'es');
+    });
+  }
 
   // Contacts search
   document.getElementById('contacts-search').addEventListener('input', renderContacts);
@@ -1617,6 +2017,7 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 
-  // Boot
+  // Initialize Language & Boot
+  setLanguage(state.lang);
   checkAuth();
 });
