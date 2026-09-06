@@ -31,8 +31,10 @@ Kayendar is a simple, lightweight, and self-hosted CalDAV/CardDAV server designe
 - 📆 **Customizable Week Start** — Toggle between Monday (ISO 8601 default) and Sunday as the first day of the week with instant UI updates.
 - 🔗 **Public iCal Feeds & Data Portability** — Generate token-secured public subscription URLs for external apps, plus one-click `.ics` export and import.
 - 📍 **Enhanced Event Metadata** — Full support for event **Locations** and **Reminders (Alarms)** synchronized bidirectionally.
-- ⌨️ **Keyboard Navigation & Glassmorphic Tooltips** — Full keyboard shortcut support (`?`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) and hover tooltips for every control.
+- ⚙️ **Settings & Preferences Modal** — Dedicated configuration dialog (Shortcut: `,`) to manage interface language, week start day, CalDAV/CardDAV device synchronization assistant, and system information.
+- ⌨️ **Keyboard Navigation & Glassmorphic Tooltips** — Full keyboard shortcut support (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) and hover tooltips for every control.
 - 🌐 **Bilingual (ES / EN)** — Dynamic multi-language toggle with instant live interface translation.
+- 🏷️ **Version & GitHub Integration** — Visible app release version tag (`v1.0.0`) and direct link to official GitHub repository across login and dashboard footers.
 - 🔐 **Secure Authentication** — Basic Authentication for DAV clients and secure session cookies for the web app.
 - 💾 **File-Based Storage** — Flat files (`.ics` for events, `.vcf` for contacts) under a simple directory tree. No complex database to configure or backup!
 - 🐳 **Docker-Ready** — Extremely lightweight Python container, running without heavy dependencies. Perfect for homelab setups (Caddy, Traefik, Dockge, etc.).
@@ -269,8 +271,10 @@ Kayendar es un servidor CalDAV/CardDAV simple, ligero y autoalojado diseñado pa
 - 📆 **Semana Personalizable (Lunes o Domingo)** — Conmuta con un solo clic el primer día de la semana entre Lunes (por defecto ISO 8601) y Domingo.
 - 🔗 **Enlaces Públicos iCal y Portabilidad** — Suscripción segura por URL con token para herramientas externas, además de importación y exportación de archivos `.ics` con un clic.
 - 📍 **Metadatos de Eventos Mejorados** — Soporte completo para **Ubicaciones** y **Recordatorios (Alarmas)** de eventos sincronizados bidireccionalmente.
-- ⌨️ **Navegación por Teclado y Tooltips** — Atajos rápidos (`?`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) e información contextual emergente en cada botón.
+- ⚙️ **Modal de Configuración y Preferencias** — Panel centralizado de ajustes (Atajo: `,`) para cambiar idioma, primer día de la semana, asistente de sincronización de dispositivos CalDAV/CardDAV e información técnica.
+- ⌨️ **Navegación por Teclado y Tooltips** — Atajos rápidos (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) e información contextual emergente en cada botón.
 - 🌐 **Soporte Bilingüe (ES / EN)** — Selector interactivo con traducción completa y dinámica de la interfaz en tiempo real.
+- 🏷️ **Integración de Versión y GitHub** — Etiqueta visible de versión (`v1.0.0`) y enlace directo al repositorio oficial de GitHub en el pie de página y la pantalla de acceso.
 - 🔐 **Autenticación Segura** — Autenticación básica (Basic Auth) para clientes DAV y cookies de sesión seguras para la aplicación web.
 - 💾 **Almacenamiento Basado en Archivos** — Archivos planos (`.ics` para eventos, `.vcf` para contactos) bajo un árbol de directorios simple. ¡Sin bases de datos complejas que configurar o respaldar!
 - 🐳 **Listo para Docker** — Contenedor Python extremadamente ligero, que se ejecuta sin dependencias pesadas. Perfecto para entornos domésticos (Caddy, Traefik, Dockge, etc.).

@@ -60,6 +60,16 @@
             <span class="btn-spinner hidden"></span>
           </button>
         </form>
+        <div class="login-meta">
+          <span class="app-version-tag">v1.0.0</span>
+          <span class="meta-dot">·</span>
+          <a href="https://github.com/snchz/kayendar" target="_blank" rel="noopener noreferrer" class="github-link">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </div>
       </div>
     </div>
 
@@ -120,21 +130,39 @@
           <div id="addressbooks-list" class="collection-list"></div>
         </div>
 
-        <div class="sidebar-footer">
-          <span id="username-display" class="username-display"></span>
-          <div class="sidebar-footer-actions">
-            <button id="week-start-btn" class="icon-btn lang-toggle-btn" data-tooltip="Primer día: Lunes (clic para cambiar a Domingo)" data-i18n-tooltip="tt_week_start_mon" aria-label="First day of week">📅 Lun</button>
-            <button id="lang-btn" class="icon-btn lang-toggle-btn" data-tooltip="Cambiar idioma (ES / EN)" data-i18n-tooltip="tt_lang" aria-label="Language">🌐 ES</button>
-            <button id="connect-device-btn" class="icon-btn" data-tooltip="Sincronizar con iPhone o Android (CalDAV)" data-i18n-tooltip="tt_connect" aria-label="Sync with Phone">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+        <div class="sidebar-bottom">
+          <div class="sidebar-footer">
+            <span id="username-display" class="username-display"></span>
+            <div class="sidebar-footer-actions">
+              <button id="week-start-btn" class="icon-btn lang-toggle-btn" data-tooltip="Primer día: Lunes (clic para cambiar a Domingo)" data-i18n-tooltip="tt_week_start_mon" aria-label="First day of week">📅 Lun</button>
+              <button id="lang-btn" class="icon-btn lang-toggle-btn" data-tooltip="Cambiar idioma (ES / EN)" data-i18n-tooltip="tt_lang" aria-label="Language">🌐 ES</button>
+              <button id="connect-device-btn" class="icon-btn" data-tooltip="Sincronizar con iPhone o Android (CalDAV)" data-i18n-tooltip="tt_connect" aria-label="Sync with Phone">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+                </svg>
+              </button>
+              <button id="sidebar-settings-btn" class="icon-btn" data-tooltip="Configuración y preferencias" data-i18n-tooltip="tt_settings" aria-label="Settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </button>
+              <button id="logout-btn" class="icon-btn" data-tooltip="Cerrar sesión" data-i18n-tooltip="tt_logout" aria-label="Logout">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="sidebar-meta">
+            <span class="app-version-tag">v1.0.0</span>
+            <span class="meta-dot">·</span>
+            <a href="https://github.com/snchz/kayendar" target="_blank" rel="noopener noreferrer" class="github-link" title="GitHub Repository">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
               </svg>
-            </button>
-            <button id="logout-btn" class="icon-btn" data-tooltip="Cerrar sesión" data-i18n-tooltip="tt_logout" aria-label="Logout">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-            </button>
+              <span>GitHub</span>
+            </a>
           </div>
         </div>
       </aside>
@@ -176,6 +204,12 @@
                   <line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/>
                   <line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/><line x1="14" y1="12" x2="14.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/>
                   <line x1="7" y1="16" x2="17" y2="16"/>
+                </svg>
+              </button>
+              <button id="settings-btn" class="icon-btn" data-tooltip="Configuración y preferencias (Atajo: ,)" data-i18n-tooltip="tt_settings" aria-label="Settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
               </button>
               <button id="quick-add-btn" class="btn btn-ghost" data-tooltip="Crear cita escribiendo en lenguaje natural (ej: 'Cena mañana 21:00') (Atajo: Q)" data-i18n-tooltip="tt_quick">
@@ -525,8 +559,82 @@
         <div class="shortcut-row"><kbd>J</kbd> / <kbd>&larr;</kbd> <span data-i18n="sc_prev">Período Anterior</span></div>
         <div class="shortcut-row"><kbd>K</kbd> / <kbd>&rarr;</kbd> <span data-i18n="sc_next">Período Siguiente</span></div>
         <div class="shortcut-row"><kbd>C</kbd> <span data-i18n="sc_new">Nuevo Evento</span></div>
+        <div class="shortcut-row"><kbd>,</kbd> <span data-i18n="sc_settings">Configuración</span></div>
         <div class="shortcut-row"><kbd>Esc</kbd> <span data-i18n="sc_close">Cerrar Ventanas</span></div>
         <div class="shortcut-row"><kbd>?</kbd> <span data-i18n="sc_guide">Guía de Atajos</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Settings & Preferences -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal glass settings-modal">
+      <div class="modal-header">
+        <h3 data-i18n="settings_title">Configuración y Preferencias</h3>
+        <button class="icon-btn modal-close" data-modal="settings-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="settings-content">
+        <!-- Preferences section -->
+        <div class="settings-section">
+          <h4 class="settings-section-title" data-i18n="settings_general">General</h4>
+          <div class="settings-row">
+            <div class="settings-label-group">
+              <span class="settings-label" data-i18n="settings_language">Idioma de la interfaz</span>
+            </div>
+            <select id="setting-lang" class="settings-select">
+              <option value="es">Español (ES)</option>
+              <option value="en">English (EN)</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label-group">
+              <span class="settings-label" data-i18n="settings_first_day">Primer día de la semana</span>
+            </div>
+            <select id="setting-first-day" class="settings-select">
+              <option value="1" data-i18n="monday">Lunes</option>
+              <option value="0" data-i18n="sunday">Domingo</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sync section -->
+        <div class="settings-section">
+          <h4 class="settings-section-title" data-i18n="settings_sync_title">Sincronización de dispositivos</h4>
+          <p class="settings-desc" data-i18n="settings_sync_desc">Configura CalDAV y CardDAV en tu iPhone, Android o Thunderbird</p>
+          <button type="button" id="settings-open-sync-btn" class="btn btn-ghost btn-sm" style="margin-top: 8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            <span data-i18n="settings_open_sync">Abrir asistente de sincronización...</span>
+          </button>
+        </div>
+
+        <!-- About section -->
+        <div class="settings-section">
+          <h4 class="settings-section-title" data-i18n="settings_about">Acerca de</h4>
+          <div class="settings-about-box">
+            <div class="settings-about-row">
+              <span class="settings-about-key" data-i18n="settings_version">Versión instalada</span>
+              <span class="badge badge-accent">v1.0.0</span>
+            </div>
+            <div class="settings-about-row">
+              <span class="settings-about-key" data-i18n="settings_repo">Repositorio oficial</span>
+              <a href="https://github.com/snchz/kayendar" target="_blank" rel="noopener noreferrer" class="settings-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                <span>github.com/snchz/kayendar</span>
+              </a>
+            </div>
+            <div class="settings-about-row">
+              <span class="settings-about-key">Licencia</span>
+              <span style="color: var(--text-secondary); font-size: 13px;">MIT Open Source</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary modal-close" data-modal="settings-modal" data-i18n="close">Cerrar</button>
       </div>
     </div>
   </div>
@@ -534,6 +642,6 @@
   <!-- Toast notifications -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="/assets/app.js?v=4"></script>
+  <script src="/assets/app.js?v=5"></script>
 </body>
 </html>

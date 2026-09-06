@@ -191,6 +191,23 @@ const i18n = {
     tt_logout: 'Cerrar sesión',
     tt_new_contact: 'Añadir nuevo contacto a la libreta',
     tt_close_tasks: 'Cerrar panel de tareas',
+    tt_settings: 'Configuración y preferencias (Atajo: ,)',
+
+    // Settings
+    settings: 'Configuración',
+    settings_title: 'Configuración y Preferencias',
+    settings_general: 'General',
+    settings_language: 'Idioma de la interfaz',
+    settings_first_day: 'Primer día de la semana',
+    monday: 'Lunes',
+    sunday: 'Domingo',
+    settings_about: 'Acerca de',
+    settings_version: 'Versión instalada',
+    settings_repo: 'Repositorio oficial',
+    settings_sync_title: 'Sincronización de dispositivos',
+    settings_sync_desc: 'Configura CalDAV y CardDAV en tu iPhone, Android o Thunderbird',
+    settings_open_sync: 'Abrir asistente de sincronización...',
+    sc_settings: 'Configuración',
 
     // Toasts
     task_deleted: 'Tarea eliminada',
@@ -369,6 +386,23 @@ const i18n = {
     tt_logout: 'Log out',
     tt_new_contact: 'Add new contact to address book',
     tt_close_tasks: 'Close tasks drawer',
+    tt_settings: 'Settings and preferences (Shortcut: ,)',
+
+    // Settings
+    settings: 'Settings',
+    settings_title: 'Settings & Preferences',
+    settings_general: 'General',
+    settings_language: 'Interface Language',
+    settings_first_day: 'First Day of Week',
+    monday: 'Monday',
+    sunday: 'Sunday',
+    settings_about: 'About',
+    settings_version: 'Installed Version',
+    settings_repo: 'Official Repository',
+    settings_sync_title: 'Device Synchronization',
+    settings_sync_desc: 'Configure CalDAV and CardDAV on your iPhone, Android or Thunderbird',
+    settings_open_sync: 'Open sync setup guide...',
+    sc_settings: 'Settings',
 
     // Toasts
     task_deleted: 'Task deleted',
@@ -425,14 +459,17 @@ const state = {
 
 function updateWeekStartBtn() {
   const btn = document.getElementById('week-start-btn');
-  if (!btn) return;
-  if (state.firstDayOfWeek === 1) {
-    btn.textContent = state.lang === 'en' ? '📅 Mon' : '📅 Lun';
-    btn.setAttribute('data-tooltip', t('tt_week_start_mon'));
-  } else {
-    btn.textContent = state.lang === 'en' ? '📅 Sun' : '📅 Dom';
-    btn.setAttribute('data-tooltip', t('tt_week_start_sun'));
+  if (btn) {
+    if (state.firstDayOfWeek === 1) {
+      btn.textContent = state.lang === 'en' ? '📅 Mon' : '📅 Lun';
+      btn.setAttribute('data-tooltip', t('tt_week_start_mon'));
+    } else {
+      btn.textContent = state.lang === 'en' ? '📅 Sun' : '📅 Dom';
+      btn.setAttribute('data-tooltip', t('tt_week_start_sun'));
+    }
   }
+  const settingFirstDay = document.getElementById('setting-first-day');
+  if (settingFirstDay) settingFirstDay.value = String(state.firstDayOfWeek);
 }
 
 function setLanguage(lang) {
@@ -446,6 +483,8 @@ function setLanguage(lang) {
     langBtn.textContent = lang === 'es' ? '🌐 ES' : '🌐 EN';
     langBtn.setAttribute('data-tooltip', t('tt_lang'));
   }
+  const settingLang = document.getElementById('setting-lang');
+  if (settingLang) settingLang.value = lang;
   updateWeekStartBtn();
 
   // Translate all DOM elements with data-i18n
@@ -2249,6 +2288,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Settings modal handlers
+  function openSettingsModal() {
+    const langSel = document.getElementById('setting-lang');
+    if (langSel) langSel.value = state.lang;
+    const firstDaySel = document.getElementById('setting-first-day');
+    if (firstDaySel) firstDaySel.value = String(state.firstDayOfWeek);
+    openModal('settings-modal');
+  }
+
+  const settingsBtn = document.getElementById('settings-btn');
+  if (settingsBtn) settingsBtn.addEventListener('click', openSettingsModal);
+  const sidebarSettingsBtn = document.getElementById('sidebar-settings-btn');
+  if (sidebarSettingsBtn) sidebarSettingsBtn.addEventListener('click', openSettingsModal);
+
+  const settingLang = document.getElementById('setting-lang');
+  if (settingLang) {
+    settingLang.addEventListener('change', (e) => {
+      setLanguage(e.target.value);
+    });
+  }
+
+  const settingFirstDay = document.getElementById('setting-first-day');
+  if (settingFirstDay) {
+    settingFirstDay.addEventListener('change', (e) => {
+      state.firstDayOfWeek = parseInt(e.target.value, 10);
+      localStorage.setItem('kayendar_first_day', String(state.firstDayOfWeek));
+      updateWeekStartBtn();
+      renderCalendar();
+    });
+  }
+
+  const settingsSyncBtn = document.getElementById('settings-open-sync-btn');
+  if (settingsSyncBtn) {
+    settingsSyncBtn.addEventListener('click', () => {
+      closeModal('settings-modal');
+      openConnectModal();
+    });
+  }
+
   // Contacts search
   document.getElementById('contacts-search').addEventListener('input', renderContacts);
 
@@ -2271,9 +2349,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalOpen = document.querySelector('.modal-overlay:not(.hidden)');
     if (modalOpen) return;
 
+    const key = e.key.toLowerCase();
+    if (key === ',') {
+      e.preventDefault();
+      openSettingsModal();
+      return;
+    }
+
     if (state.activeView !== 'calendar') return;
 
-    const key = e.key.toLowerCase();
     if (key === 'q') {
       e.preventDefault();
       openQuickAdd();
