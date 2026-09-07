@@ -131,6 +131,36 @@ input:focus, select:focus, textarea:focus {
 select option { background: #1e1e3a; color: var(--text-primary); }
 textarea { resize: vertical; }
 
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.password-wrapper input {
+  padding-right: 42px !important;
+}
+.password-toggle-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition);
+  z-index: 2;
+}
+.password-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
 /* ── Buttons ── */

@@ -88,6 +88,9 @@ const i18n = {
     clave: 'Contraseña',
     sign_in: 'Iniciar Sesión',
     username_placeholder: 'tu-usuario',
+    login_failed_credentials: 'Usuario o contraseña incorrectos. Por favor, verifica tus datos de acceso.',
+    login_failed_empty: 'El nombre de usuario y la contraseña no pueden estar vacíos.',
+    login_failed_generic: 'Error al iniciar sesión. Comprueba tus datos o la conexión del servidor.',
 
     // Modals
     modal_new_event: 'Nuevo Evento',
@@ -348,6 +351,9 @@ const i18n = {
     clave: 'Password',
     sign_in: 'Sign In',
     username_placeholder: 'your-username',
+    login_failed_credentials: 'Incorrect username or password. Please check your login credentials.',
+    login_failed_empty: 'Username and password cannot be empty.',
+    login_failed_generic: 'Login failed. Please check your credentials or server connection.',
 
     // Modals
     modal_new_event: 'New Event',
@@ -2767,26 +2773,57 @@ async function mergeContactPair(pair) {
 // ── Boot ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
 
+  // Password Visibility Toggle
+  const togglePassBtn = document.getElementById('toggle-password-btn');
+  const passInput = document.getElementById('password-input');
+  if (togglePassBtn && passInput) {
+    togglePassBtn.addEventListener('click', () => {
+      const isPass = passInput.type === 'password';
+      passInput.type = isPass ? 'text' : 'password';
+      const eyeShow = document.getElementById('eye-icon-show');
+      const eyeHide = document.getElementById('eye-icon-hide');
+      if (eyeShow) eyeShow.classList.toggle('hidden', isPass);
+      if (eyeHide) eyeHide.classList.toggle('hidden', !isPass);
+    });
+  }
+
   // Login form
   document.getElementById('login-form').addEventListener('submit', async e => {
     e.preventDefault();
+    const userInput = document.getElementById('username-input');
+    const passInput = document.getElementById('password-input');
+    const username = userInput ? userInput.value.trim() : '';
+    const password = passInput ? passInput.value : '';
+
     const btn = document.getElementById('login-btn');
     const errEl = document.getElementById('login-error');
     errEl.classList.add('hidden');
+
+    if (!username || !password) {
+      errEl.textContent = t('login_failed_empty');
+      errEl.classList.remove('hidden');
+      return;
+    }
+
     btn.querySelector('.btn-text').classList.add('hidden');
     btn.querySelector('.btn-spinner').classList.remove('hidden');
     btn.disabled = true;
 
     try {
-      await api.post('/api/login', {
-        username: document.getElementById('username-input').value,
-        password: document.getElementById('password-input').value,
-      });
+      await api.post('/api/login', { username, password });
       const me = await api.get('/api/me');
       state.user = me.username;
       await initApp();
     } catch (err) {
-      errEl.textContent = err.message || 'Login failed';
+      let msg = err.message || '';
+      if (msg.includes('Invalid credentials')) {
+        msg = t('login_failed_credentials');
+      } else if (msg.includes('cannot be empty') || msg.includes('empty')) {
+        msg = t('login_failed_empty');
+      } else if (!msg) {
+        msg = t('login_failed_generic');
+      }
+      errEl.textContent = msg;
       errEl.classList.remove('hidden');
     } finally {
       btn.querySelector('.btn-text').classList.remove('hidden');
