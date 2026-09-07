@@ -33,7 +33,7 @@ Kayendar is a lightweight, self-contained CalDAV and CardDAV synchronization ser
 | M5 | Containerization & Integration | Dockerfile, docker-compose, and homelab stack deployment. | M4 | DONE |
 | M6 | E2E & Adversarial Hardening | Pass 100% of E2E tests (107 passed), security auditor verification. | M1, M5 | DONE |
 | M7 | Advanced Homelab UX & Features | NLP quick add, multi-phone vCard contacts, in-modal calendar creation, VTODO task scheduling, iCal sharing, Settings & Preferences modal, visible version/GitHub link, and strict CSS Grid column boundary handling. | M4, M6 | DONE |
-| M8 | Public-Ready & Standards Polish | Executive design overhaul (sidebar user card, navigation cluster, live now-indicator), complete `.vcf` address book export/import, and RFC 6764 auto-discovery endpoints. | M7 | DONE |
+| M8 | Public-Ready & Standards Polish | Executive design overhaul, full `.vcf` address book export/import, RFC 6764 auto-discovery, Omnisearch command palette (Ctrl+K), contact deduplication & fusion tool, RRULE event recurrence (🔁), and LocalStorage offline cache. | M7 | DONE |
 
 ## Interface Contracts
 ### Client ↔ Server DAV
