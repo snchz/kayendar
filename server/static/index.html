@@ -384,8 +384,13 @@
           </div>
         </div>
         <div class="field">
-          <label for="contact-email" data-i18n="contact_email">Email</label>
-          <input id="contact-email" type="email" placeholder="email@ejemplo.com" />
+          <div class="field-label-row">
+            <label data-i18n="contact_email">Correos Electrónicos</label>
+            <button type="button" id="contact-add-email-btn" class="text-link-btn" data-tooltip="Añadir otro correo electrónico" data-i18n-tooltip="tt_add_email">
+              + <span data-i18n="add_email">Añadir correo</span>
+            </button>
+          </div>
+          <div id="contact-emails-container" class="contact-emails-list"></div>
         </div>
         <div class="field">
           <div class="field-label-row">

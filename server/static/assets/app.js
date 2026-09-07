@@ -283,6 +283,9 @@ const i18n = {
     duplicate_by_name: 'Mismo nombre completo',
     contacts_merged: 'Se fusionaron los contactos correctamente',
     offline_mode_active: 'Modo sin conexión: mostrando datos en caché local',
+    add_email: 'Añadir correo',
+    tt_add_email: 'Añadir otro correo electrónico',
+    delete_email: 'Eliminar correo',
   },
   en: {
     // Nav & General
@@ -527,6 +530,9 @@ const i18n = {
     duplicate_by_name: 'Same full name',
     contacts_merged: 'Contacts merged successfully',
     offline_mode_active: 'Offline mode: displaying local cached data',
+    add_email: 'Add email',
+    tt_add_email: 'Add another email address',
+    delete_email: 'Delete email',
   }
 };
 
@@ -739,7 +745,7 @@ function parseVcf(content) {
   const contacts = [];
   const cards = content.split(/BEGIN:VCARD/i).slice(1);
   for (const card of cards) {
-    const c = { phones: [] };
+    const c = { phones: [], emails: [] };
     for (const line of card.split(/\r?\n/)) {
       const colon = line.indexOf(':');
       if (colon < 0) continue;
@@ -752,7 +758,19 @@ function parseVcf(content) {
         c.lastName  = parts[0] || '';
         c.firstName = parts[1] || '';
       }
-      if (key === 'EMAIL') c.email = val;
+      if (key === 'EMAIL') {
+        let type = 'INTERNET';
+        const typeMatch = fullKey.match(/TYPE=([^;:]+)/i);
+        if (typeMatch) {
+          const tVal = typeMatch[1].toUpperCase();
+          if (tVal.includes('WORK')) type = 'WORK';
+          else if (tVal.includes('HOME')) type = 'HOME';
+          else if (tVal.includes('OTHER')) type = 'OTHER';
+        }
+        if (val) {
+          c.emails.push({ email: val, type });
+        }
+      }
       if (key === 'TEL') {
         let type = 'CELL';
         const typeMatch = fullKey.match(/TYPE=([^;:]+)/i);
@@ -787,6 +805,7 @@ function parseVcf(content) {
       }
       if (key === 'UID') c.uid = val;
     }
+    c.email = c.emails.length > 0 ? c.emails[0].email : '';
     if (c.phones.length > 0) {
       c.phone = c.phones[0].number;
     } else {
@@ -797,7 +816,7 @@ function parseVcf(content) {
   return contacts;
 }
 
-function buildVcf(uid, firstName, lastName, email, phones, address = '', org = '', title = '', notes = '', bday = '') {
+function buildVcf(uid, firstName, lastName, emails, phones, address = '', org = '', title = '', notes = '', bday = '') {
   const telLines = [];
   if (Array.isArray(phones)) {
     phones.forEach(p => {
@@ -811,13 +830,26 @@ function buildVcf(uid, firstName, lastName, email, phones, address = '', org = '
     telLines.push(`TEL;TYPE=CELL:${phones.trim()}`);
   }
 
+  const emailLines = [];
+  if (Array.isArray(emails)) {
+    emails.forEach(e => {
+      const addr = typeof e === 'string' ? e.trim() : (e.email || e.address || '').trim();
+      const typ = (typeof e === 'object' && e.type) ? e.type.toUpperCase() : 'INTERNET';
+      if (addr) {
+        emailLines.push(`EMAIL;TYPE=${typ}:${addr}`);
+      }
+    });
+  } else if (emails && typeof emails === 'string' && emails.trim()) {
+    emailLines.push(`EMAIL;TYPE=INTERNET:${emails.trim()}`);
+  }
+
   const lines = [
     'BEGIN:VCARD',
     'VERSION:3.0',
     `UID:${uid}`,
     `FN:${firstName} ${lastName}`.trim(),
     `N:${lastName};${firstName};;;`,
-    email ? `EMAIL:${email}` : '',
+    ...emailLines,
     ...telLines,
     address ? `ADR;TYPE=HOME:;;${address.replace(/;/g, ' ')};;;;` : '',
     org ? `ORG:${org}` : '',
@@ -1136,6 +1168,41 @@ function getEventsForDate(targetDate) {
       }
     }
   }
+
+  // Add contact birthdays as annual synthetic events on calendar
+  for (const c of allContacts()) {
+    if (!c.bday) continue;
+    const cleanBday = c.bday.replace(/^--/, '');
+    const parts = cleanBday.split(/[-/]/);
+    let bMonth = -1, bDay = -1, bYear = -1;
+    if (parts.length === 3) {
+      bYear = parseInt(parts[0], 10);
+      bMonth = parseInt(parts[1], 10);
+      bDay = parseInt(parts[2], 10);
+    } else if (parts.length === 2) {
+      bMonth = parseInt(parts[0], 10);
+      bDay = parseInt(parts[1], 10);
+    }
+
+    if (bMonth === targetDate.getMonth() + 1 && bDay === targetDate.getDate()) {
+      let ageStr = '';
+      if (bYear > 1900 && bYear <= targetDate.getFullYear()) {
+        const age = targetDate.getFullYear() - bYear;
+        if (age >= 0) ageStr = ` (${age})`;
+      }
+      const bdayTitle = `🎂 Cumpleaños de ${c.fn || c.firstName || t('unnamed')}${ageStr}`;
+      list.push({
+        uid: `bday-${c.uid || c.filename}`,
+        title: bdayTitle,
+        start: new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0),
+        end: new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59),
+        collectionColor: '#ec4899',
+        isBirthday: true,
+        contactItem: c,
+      });
+    }
+  }
+
   return list;
 }
 
@@ -1240,7 +1307,11 @@ function createDayCell(date, otherMonth) {
         evEl.classList.add('dragging');
       });
       evEl.addEventListener('dragend', () => evEl.classList.remove('dragging'));
-      evEl.addEventListener('click', e => { e.stopPropagation(); openEditEvent(ev); });
+      evEl.addEventListener('click', e => {
+        e.stopPropagation();
+        if (ev.isBirthday && ev.contactItem) openEditContact(ev.contactItem);
+        else openEditEvent(ev);
+      });
       evContainer.appendChild(evEl);
     });
     if (dayEvents.length > 3) {
@@ -1409,7 +1480,11 @@ function renderWeekView(grid) {
         evEl.classList.add('dragging');
       });
       evEl.addEventListener('dragend', () => evEl.classList.remove('dragging'));
-      evEl.addEventListener('click', () => openEditEvent(ev));
+      evEl.addEventListener('click', e => {
+        e.stopPropagation();
+        if (ev.isBirthday && ev.contactItem) openEditContact(ev.contactItem);
+        else openEditEvent(ev);
+      });
       eventsArea.appendChild(evEl);
     });
 
@@ -1918,6 +1993,55 @@ async function deleteEvent() {
 }
 
 // ── Contact modal ─────────────────────────────────────────────
+function renderEmailRow(container, email = { address: '', type: 'INTERNET' }) {
+  const row = document.createElement('div');
+  row.className = 'email-row phone-row';
+
+  const select = document.createElement('select');
+  select.className = 'email-type-select phone-type-select';
+  const types = [
+    { val: 'INTERNET', label: '✉️ Personal' },
+    { val: 'WORK', label: '💼 Trabajo' },
+    { val: 'HOME', label: '🏠 Casa' },
+    { val: 'OTHER', label: '📧 Otro' },
+  ];
+  if (state.lang === 'en') {
+    types[0].label = '✉️ Personal';
+    types[1].label = '💼 Work';
+    types[2].label = '🏠 Home';
+    types[3].label = '📧 Other';
+  }
+  select.innerHTML = types.map(tp =>
+    `<option value="${tp.val}" ${tp.val === (email.type || 'INTERNET') ? 'selected' : ''}>${tp.label}</option>`
+  ).join('');
+
+  const input = document.createElement('input');
+  input.type = 'email';
+  input.className = 'email-address-input phone-number-input';
+  input.placeholder = 'correo@ejemplo.com';
+  input.value = email.address || email.email || '';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'icon-btn email-remove-btn phone-remove-btn';
+  removeBtn.title = t('delete_email');
+  removeBtn.innerHTML = '&times;';
+  removeBtn.addEventListener('click', () => {
+    const allRows = container.querySelectorAll('.email-row');
+    if (allRows.length > 1) {
+      row.remove();
+    } else {
+      input.value = '';
+    }
+  });
+
+  row.appendChild(select);
+  row.appendChild(input);
+  row.appendChild(removeBtn);
+  container.appendChild(row);
+  return input;
+}
+
 function renderPhoneRow(container, phone = { number: '', type: 'CELL' }) {
   const row = document.createElement('div');
   row.className = 'phone-row';
@@ -1984,6 +2108,13 @@ function openNewContact() {
   const notesEl = document.getElementById('contact-notes');
   if (notesEl) notesEl.value = '';
   document.getElementById('contact-delete-btn').classList.add('hidden');
+
+  const emailContainer = document.getElementById('contact-emails-container');
+  if (emailContainer) {
+    emailContainer.innerHTML = '';
+    renderEmailRow(emailContainer, { address: '', type: 'INTERNET' });
+  }
+
   const container = document.getElementById('contact-phones-container');
   if (container) {
     container.innerHTML = '';
@@ -2004,13 +2135,24 @@ function openEditContact(c) {
   if (orgEl) orgEl.value = c.org || '';
   const titleEl = document.getElementById('contact-title');
   if (titleEl) titleEl.value = c.title || '';
-  document.getElementById('contact-email').value     = c.email     || '';
   const addrEl = document.getElementById('contact-address');
   if (addrEl) addrEl.value = c.address || '';
   const bdayEl = document.getElementById('contact-bday');
   if (bdayEl) bdayEl.value = c.bday || '';
   const notesEl = document.getElementById('contact-notes');
   if (notesEl) notesEl.value = c.notes || '';
+
+  const emailContainer = document.getElementById('contact-emails-container');
+  if (emailContainer) {
+    emailContainer.innerHTML = '';
+    if (c.emails && c.emails.length > 0) {
+      c.emails.forEach(e => renderEmailRow(emailContainer, { address: e.email, type: e.type }));
+    } else if (c.email) {
+      renderEmailRow(emailContainer, { address: c.email, type: 'INTERNET' });
+    } else {
+      renderEmailRow(emailContainer, { address: '', type: 'INTERNET' });
+    }
+  }
 
   const container = document.getElementById('contact-phones-container');
   if (container) {
@@ -2035,7 +2177,6 @@ async function saveContact(e) {
   const lastName  = document.getElementById('contact-lastname').value.trim();
   const org       = document.getElementById('contact-org')?.value.trim() || '';
   const title     = document.getElementById('contact-title')?.value.trim() || '';
-  const email     = document.getElementById('contact-email').value.trim();
   const address   = document.getElementById('contact-address')?.value.trim() || '';
   const bday      = document.getElementById('contact-bday')?.value.trim() || '';
   const notes     = document.getElementById('contact-notes')?.value.trim() || '';
@@ -2045,6 +2186,18 @@ async function saveContact(e) {
 
   if (!lastName && !firstName) { toast(t('name_required'), 'error'); return; }
   if (!slug) { toast(t('select_addressbook'), 'error'); return; }
+
+  const emails = [];
+  const emailContainer = document.getElementById('contact-emails-container');
+  if (emailContainer) {
+    emailContainer.querySelectorAll('.email-row').forEach(row => {
+      const addr = row.querySelector('.email-address-input')?.value.trim();
+      const typ = row.querySelector('.email-type-select')?.value || 'INTERNET';
+      if (addr) {
+        emails.push({ email: addr, type: typ });
+      }
+    });
+  }
 
   const phones = [];
   const container = document.getElementById('contact-phones-container');
@@ -2061,7 +2214,7 @@ async function saveContact(e) {
   if (!uid) uid = generateUid();
   if (!filename) filename = uid + '.vcf';
 
-  const content = buildVcf(uid, firstName, lastName, email, phones, address, org, title, notes, bday);
+  const content = buildVcf(uid, firstName, lastName, emails, phones, address, org, title, notes, bday);
 
   try {
     await api.put(`/api/collections/${slug}/items/${filename}`, { content });
@@ -2705,6 +2858,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const container = document.getElementById('contact-phones-container');
       if (container) {
         const input = renderPhoneRow(container, { number: '', type: 'CELL' });
+        if (input) input.focus();
+      }
+    });
+  }
+
+  // Add email button in contact modal
+  const addEmailBtn = document.getElementById('contact-add-email-btn');
+  if (addEmailBtn) {
+    addEmailBtn.addEventListener('click', () => {
+      const container = document.getElementById('contact-emails-container');
+      if (container) {
+        const input = renderEmailRow(container, { address: '', type: 'INTERNET' });
         if (input) input.focus();
       }
     });
