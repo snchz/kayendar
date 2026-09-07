@@ -459,10 +459,14 @@
               <button type="button" class="swatch" data-color="#06b6d4" style="background:#06b6d4"></button>
             </div>
           </div>
+        <div class="field">
+          <label for="col-remote-url" data-i18n="remote_sync_url">URL de Sincronización Remota (ej. Google iCal / WebCAL)</label>
+          <input id="col-remote-url" type="url" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" data-i18n-placeholder="remote_url_placeholder" />
         </div>
         <div id="col-tools-section" class="field col-tools-section hidden">
           <label data-i18n="data_sharing">Datos y Compartición</label>
           <div class="col-actions-row">
+            <button type="button" id="col-sync-btn" class="btn btn-primary btn-sm hidden" data-i18n="sync_now">🔄 Sincronizar Ahora</button>
             <button type="button" id="col-export-btn" class="btn btn-ghost btn-sm" data-i18n="export_ics">📥 Exportar .ics</button>
             <label class="btn btn-ghost btn-sm" style="margin:0; cursor:pointer;">
               <span id="col-import-label" data-i18n="import_ics">📤 Importar .ics</span>

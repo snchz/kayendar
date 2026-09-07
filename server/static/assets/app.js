@@ -286,6 +286,8 @@ const i18n = {
     add_email: 'Añadir correo',
     tt_add_email: 'Añadir otro correo electrónico',
     delete_email: 'Eliminar correo',
+    remote_sync_url: 'URL de Sincronización Remota (ej. Google iCal)',
+    sync_now: '🔄 Sincronizar Ahora',
   },
   en: {
     // Nav & General
@@ -533,6 +535,8 @@ const i18n = {
     add_email: 'Add email',
     tt_add_email: 'Add another email address',
     delete_email: 'Delete email',
+    remote_sync_url: 'Remote Sync URL (e.g. Google iCal)',
+    sync_now: '🔄 Sync Now',
   }
 };
 
@@ -878,6 +882,9 @@ async function loadAllData() {
     state.tasks = {};
 
     for (const col of state.collections) {
+      if (col.remote_url) {
+        try { await api.post(`/api/collections/${col.slug}/sync`); } catch { /* ignore network error */ }
+      }
       try {
         const items = await api.get(`/api/collections/${col.slug}/items`);
         if (col.type === 'calendar') {
@@ -2249,6 +2256,8 @@ function openNewCollection(type) {
   document.getElementById('col-type').value = type;
   document.getElementById('col-slug').value = '';
   document.getElementById('col-color').value = type === 'calendar' ? '#6366f1' : '#10b981';
+  const remoteUrlEl = document.getElementById('col-remote-url');
+  if (remoteUrlEl) remoteUrlEl.value = '';
   document.getElementById('col-delete-btn').classList.add('hidden');
   const tools = document.getElementById('col-tools-section');
   if (tools) tools.classList.add('hidden');
@@ -2263,6 +2272,8 @@ async function openEditCollection(col) {
   document.getElementById('col-color').value = col.color;
   document.getElementById('col-type').value  = col.type;
   document.getElementById('col-slug').value  = col.slug;
+  const remoteUrlEl = document.getElementById('col-remote-url');
+  if (remoteUrlEl) remoteUrlEl.value = col.remote_url || '';
   document.getElementById('col-delete-btn').classList.remove('hidden');
 
   const toolsSection = document.getElementById('col-tools-section');
@@ -2272,6 +2283,7 @@ async function openEditCollection(col) {
   const importLabel = document.getElementById('col-import-label');
   const importInput = document.getElementById('col-import-input');
   const shareBtn = document.getElementById('col-share-btn');
+  const syncBtn = document.getElementById('col-sync-btn');
 
   if ((col.type === 'calendar' || col.type === 'addressbook') && toolsSection) {
     toolsSection.classList.remove('hidden');
@@ -2279,6 +2291,26 @@ async function openEditCollection(col) {
     if (shareUrlInput) shareUrlInput.value = '';
 
     const isAb = col.type === 'addressbook';
+
+    if (syncBtn) {
+      if (col.remote_url) {
+        syncBtn.classList.remove('hidden');
+        syncBtn.onclick = async () => {
+          try {
+            const res = await api.post(`/api/collections/${col.slug}/sync`);
+            toast(t('imported_items', { n: res.imported || 0 }));
+            closeModal('collection-modal');
+            await loadAllData();
+            if (isAb) renderContacts();
+            else renderCalendar();
+          } catch (err) {
+            toast(err.message, 'error');
+          }
+        };
+      } else {
+        syncBtn.classList.add('hidden');
+      }
+    }
 
     if (exportBtn) {
       exportBtn.textContent = t(isAb ? 'export_vcf' : 'export_ics');
@@ -2391,15 +2423,16 @@ async function saveCollection(e) {
   const color = document.getElementById('col-color').value;
   const type  = document.getElementById('col-type').value;
   const slug  = document.getElementById('col-slug').value;
+  const remote_url = document.getElementById('col-remote-url')?.value.trim() || '';
 
   if (!name) { toast(t('name_required'), 'error'); return; }
 
   try {
     if (slug) {
-      await api.patch(`/api/collections/${slug}`, { display_name: name, color });
+      await api.patch(`/api/collections/${slug}`, { display_name: name, color, remote_url });
       toast(t('collection_saved'));
     } else {
-      await api.post('/api/collections', { display_name: name, color, type });
+      await api.post('/api/collections', { display_name: name, color, type, remote_url });
       toast(t('collection_created'));
     }
     closeModal('collection-modal');

@@ -13,6 +13,7 @@ import json
 import os
 import re
 import uuid
+import urllib.request
 from typing import Optional
 
 from fastapi import APIRouter, Cookie, Form, Request, Response
@@ -166,9 +167,10 @@ async def create_collection(request: Request) -> JSONResponse:
     if color is not None and not _validate_color(color):
         return _json_error(400, "Invalid color format")
     description = body.get("description", "")
+    remote_url = body.get("remote_url", "")
 
     try:
-        col = storage.create_collection(user, display_name, col_type, color, description, slug=slug)
+        col = storage.create_collection(user, display_name, col_type, color, description, slug=slug, remote_url=remote_url)
     except ValueError as e:
         return _json_error(400, str(e))
     return JSONResponse(col.as_dict(), status_code=201)
@@ -212,6 +214,7 @@ async def update_collection(slug: str, request: Request) -> JSONResponse:
         display_name=display_name,
         color=color,
         description=body.get("description"),
+        remote_url=body.get("remote_url"),
     )
     if col is None:
         return _json_error(404, "Collection not found")
@@ -278,6 +281,33 @@ async def import_collection(slug: str, request: Request) -> JSONResponse:
     else:
         count = storage.import_collection_ics(user, slug, content)
     return JSONResponse({"imported": count})
+
+
+@router.post("/collections/{slug}/sync")
+async def sync_remote_collection(slug: str, request: Request) -> JSONResponse:
+    user = _get_current_user(request)
+    if not user:
+        return _json_error(401, "Not authenticated")
+    col = storage.get_collection(user, slug)
+    if col is None:
+        return _json_error(404, "Collection not found")
+    if not col.remote_url:
+        return _json_error(400, "No remote_url set for this collection")
+
+    try:
+        def _fetch() -> str:
+            req = urllib.request.Request(col.remote_url, headers={"User-Agent": "Kayendar/1.0"})
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                return resp.read().decode("utf-8", errors="replace")
+
+        raw_content = await asyncio.to_thread(_fetch)
+        if col.collection_type == "addressbook":
+            count = storage.import_collection_vcf(user, slug, raw_content)
+        else:
+            count = storage.import_collection_ics(user, slug, raw_content)
+        return JSONResponse({"ok": True, "imported": count})
+    except Exception as e:
+        return _json_error(500, f"Error fetching remote URL: {str(e)}")
 
 
 @router.get("/collections/{slug}/share")

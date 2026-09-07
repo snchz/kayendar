@@ -120,6 +120,7 @@ class CollectionMeta:
     collection_type: str  # "calendar" | "addressbook"
     description: str = ""
     ctag: int = 1
+    remote_url: str = ""
 
     def as_dict(self) -> dict:
         return {
@@ -131,6 +132,7 @@ class CollectionMeta:
             "type": self.collection_type,
             "description": self.description,
             "ctag": self.ctag,
+            "remote_url": self.remote_url,
         }
 
     @classmethod
@@ -142,6 +144,7 @@ class CollectionMeta:
             collection_type=data.get("type", "calendar"),
             description=data.get("description", ""),
             ctag=data.get("ctag", 1),
+            remote_url=data.get("remote_url", ""),
         )
 
 
@@ -199,6 +202,7 @@ def create_collection(
     color: Optional[str] = None,
     description: str = "",
     slug: Optional[str] = None,
+    remote_url: str = "",
 ) -> CollectionMeta:
     """Create a new calendar or addressbook collection."""
     if collection_type not in COLLECTION_TYPES:
@@ -224,6 +228,7 @@ def create_collection(
             color=color,
             collection_type=collection_type,
             description=description,
+            remote_url=remote_url,
         )
         _write_meta(username, meta)
 
@@ -242,6 +247,7 @@ def update_collection(
     display_name: Optional[str] = None,
     color: Optional[str] = None,
     description: Optional[str] = None,
+    remote_url: Optional[str] = None,
 ) -> Optional[CollectionMeta]:
     """Update collection metadata. Returns None if not found."""
     _validate_slug(slug)
@@ -255,6 +261,8 @@ def update_collection(
             meta.color = color
         if description is not None:
             meta.description = description
+        if remote_url is not None:
+            meta.remote_url = remote_url
         _write_meta(username, meta)
     return meta
 
