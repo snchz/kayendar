@@ -74,10 +74,16 @@ def create_app() -> FastAPI:
             return Response(status_code=400, content="Directory traversal attempt detected.")
         return await call_next(request)
 
+    NO_CACHE_HEADERS = {
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+
     def _serve_spa_response() -> Response:
         index = STATIC_DIR / "index.html"
         if index.exists():
-            return FileResponse(str(index))
+            return FileResponse(str(index), headers=NO_CACHE_HEADERS)
         return HTMLResponse("<h1>Kayendar</h1><p>Static files not found.</p>")
 
     all_methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD", "REPORT", "PROPFIND", "MKCOL", "MKCALENDAR"]
@@ -101,7 +107,8 @@ def create_app() -> FastAPI:
         candidate = STATIC_DIR / full_path
         if candidate.is_file() and full_path in ("manifest.webmanifest", "sw.js", "favicon.ico", "robots.txt"):
             media_type = "application/manifest+json" if full_path.endswith(".webmanifest") else "application/javascript" if full_path.endswith(".js") else None
-            return FileResponse(str(candidate), media_type=media_type)
+            headers = NO_CACHE_HEADERS if full_path in ("sw.js", "manifest.webmanifest") else {}
+            return FileResponse(str(candidate), media_type=media_type, headers=headers)
 
         basename = os.path.basename(full_path)
         if "." in basename and basename != "index.html":

@@ -1,18 +1,18 @@
 /* Kayendar Service Worker for PWA offline shell */
-const CACHE_NAME = 'kayendar-v12';
+const CACHE_NAME = 'kayendar-v18';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/assets/app.css?v=12',
-  '/assets/app.js?v=12',
+  '/assets/app.css?v=18',
+  '/assets/app.js?v=18',
   '/assets/icon-192.svg',
   '/manifest.webmanifest'
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -34,6 +34,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // HTML navigation requests ALWAYS go to network first without cache to guarantee latest UI
+  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-cache' }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   // Network-first strategy for static assets
   event.respondWith(
     fetch(event.request)
@@ -44,13 +52,6 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (event.request.headers.get('accept')?.includes('text/html')) {
-            return caches.match('/');
-          }
-        });
-      })
+      .catch(() => caches.match(event.request))
   );
 });

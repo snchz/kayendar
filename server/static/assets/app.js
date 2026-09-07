@@ -1807,15 +1807,38 @@ function parseNaturalLanguageEvent(input) {
   return { title, start: targetDate, end, location };
 }
 
-function openQuickAdd() {
+function openQuickAdd(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
+  try { toggleMobileSidebar(false); } catch (_) {}
   const form = document.getElementById('quick-add-form');
-  if (!form) return;
-  form.reset();
-  document.getElementById('quick-add-preview').classList.add('hidden');
-  populateCalendarSelect('quick-add-calendar');
+  if (form) form.reset();
+  const prevBox = document.getElementById('quick-add-preview');
+  if (prevBox) prevBox.classList.add('hidden');
+  try { populateCalendarSelect('quick-add-calendar'); } catch (_) {}
   openModal('quick-add-modal');
   setTimeout(() => document.getElementById('quick-add-input')?.focus(), 50);
 }
+
+function openSettingsModal(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
+  try { toggleMobileSidebar(false); } catch (_) {}
+  const langSel = document.getElementById('setting-lang');
+  if (langSel && typeof state !== 'undefined' && state.lang) langSel.value = state.lang;
+  const firstDaySel = document.getElementById('setting-first-day');
+  if (firstDaySel && typeof state !== 'undefined' && state.firstDayOfWeek !== undefined) {
+    firstDaySel.value = String(state.firstDayOfWeek);
+  }
+  openModal('settings-modal');
+}
+
+window.openQuickAdd = openQuickAdd;
+window.openSettingsModal = openSettingsModal;
 
 function updateQuickAddPreview() {
   const input = document.getElementById('quick-add-input').value;
@@ -1882,11 +1905,22 @@ function openConnectModal() {
 }
 
 // ── Modal helpers ────────────────────────────────────────────
+let lastModalOpenTime = 0;
+
 function openModal(id) {
-  document.getElementById(id).classList.remove('hidden');
+  const el = document.getElementById(id);
+  if (!el) return;
+  lastModalOpenTime = Date.now();
+  window.lastModalOpenTime = lastModalOpenTime;
+  el.classList.remove('hidden');
+  el.style.display = 'flex';
+  el.style.zIndex = '9999';
 }
 function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('hidden');
+  el.style.display = '';
 }
 
 // ── Event modal ───────────────────────────────────────────────
@@ -1964,7 +1998,7 @@ function toDatetimeLocal(d) {
 function populateCalendarSelect(selectId, selectedSlug) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
-  const cals = state.collections.filter(c => c.type === 'calendar');
+  const cals = (state.collections || []).filter(c => c.type === 'calendar');
   let html = cals.map(c =>
     `<option value="${c.slug}" ${c.slug === selectedSlug ? 'selected' : ''}>${c.display_name}</option>`
   ).join('');
@@ -1974,7 +2008,8 @@ function populateCalendarSelect(selectId, selectedSlug) {
 
 function populateAddressbookSelect(selectId, selectedSlug) {
   const sel = document.getElementById(selectId);
-  const abs = state.collections.filter(c => c.type === 'addressbook');
+  if (!sel) return;
+  const abs = (state.collections || []).filter(c => c.type === 'addressbook');
   sel.innerHTML = abs.map(c =>
     `<option value="${c.slug}" ${c.slug === selectedSlug ? 'selected' : ''}>${c.display_name}</option>`
   ).join('');
@@ -2862,7 +2897,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (mobOverlay) mobOverlay.addEventListener('click', () => toggleMobileSidebar(false));
 
   const mobQuickAddBtn = document.getElementById('mobile-quick-add-btn');
-  if (mobQuickAddBtn) mobQuickAddBtn.addEventListener('click', openQuickAdd);
+  if (mobQuickAddBtn) mobQuickAddBtn.addEventListener('click', (e) => openQuickAdd(e));
 
   // Mobile Bottom Navigation bindings
   const mobNavCal = document.getElementById('mobile-nav-calendar');
@@ -2873,7 +2908,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const mobFabAdd = document.getElementById('mobile-fab-add');
   if (mobFabAdd) {
-    mobFabAdd.addEventListener('click', () => {
+    mobFabAdd.addEventListener('click', (e) => {
+      if (e?.preventDefault) e.preventDefault();
       if (state.activeView === 'contacts') {
         openNewContact();
       } else {
@@ -2886,7 +2922,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (mobNavTasks) mobNavTasks.addEventListener('click', () => toggleTasksDrawer());
 
   const mobNavSettings = document.getElementById('mobile-nav-settings');
-  if (mobNavSettings) mobNavSettings.addEventListener('click', () => openSettingsModal());
+  if (mobNavSettings) mobNavSettings.addEventListener('click', (e) => openSettingsModal(e));
 
   // Calendar nav
   document.getElementById('cal-prev').addEventListener('click', () => {
@@ -3117,10 +3153,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Modal close buttons
   document.querySelectorAll('.modal-close').forEach(btn => {
-    btn.addEventListener('click', () => closeModal(btn.dataset.modal));
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeModal(btn.dataset.modal);
+    });
+  });
+  document.querySelectorAll('.modal').forEach(m => {
+    m.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
   });
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => {
+      if (Date.now() - (window.lastModalOpenTime || lastModalOpenTime) < 350) return;
       if (e.target === overlay) closeModal(overlay.id);
     });
   });
@@ -3202,14 +3247,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Settings modal handlers
-  function openSettingsModal() {
-    const langSel = document.getElementById('setting-lang');
-    if (langSel) langSel.value = state.lang;
-    const firstDaySel = document.getElementById('setting-first-day');
-    if (firstDaySel) firstDaySel.value = String(state.firstDayOfWeek);
-    openModal('settings-modal');
-  }
-
   const settingsBtn = document.getElementById('settings-btn');
   if (settingsBtn) settingsBtn.addEventListener('click', openSettingsModal);
   const sidebarSettingsBtn = document.getElementById('sidebar-settings-btn');
@@ -3425,9 +3462,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initPwaInstall();
 
-  // PWA Service Worker Registration
+  // PWA Service Worker Registration & Auto-Update
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      reg.update();
+    }).catch(() => {});
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   }
 
   // Initialize Language & Boot

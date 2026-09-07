@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/app.css?v=12" />
+  <link rel="stylesheet" href="/assets/app.css?v=18" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#6366f1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -16,6 +16,69 @@
   <meta name="apple-mobile-web-app-title" content="Kayendar" />
   <link rel="apple-touch-icon" href="/assets/icon-192.svg" />
   <link rel="icon" type="image/svg+xml" href="/assets/icon-192.svg" />
+  <script>
+    // Immediate global handlers to guarantee zero lag and zero ReferenceErrors
+    window.lastModalOpenTime = 0;
+    window.openModal = function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      window.lastModalOpenTime = Date.now();
+      el.classList.remove('hidden');
+      el.style.display = 'flex';
+      el.style.zIndex = '9999';
+    };
+    window.closeModal = function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add('hidden');
+      el.style.display = '';
+    };
+    window.openQuickAdd = function(e) {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      }
+      try { if (typeof toggleMobileSidebar === 'function') toggleMobileSidebar(false); } catch (_) {}
+      var form = document.getElementById('quick-add-form');
+      if (form) form.reset();
+      var prevBox = document.getElementById('quick-add-preview');
+      if (prevBox) prevBox.classList.add('hidden');
+      try { if (typeof populateCalendarSelect === 'function') populateCalendarSelect('quick-add-calendar'); } catch (_) {}
+      window.openModal('quick-add-modal');
+      setTimeout(function() {
+        var inp = document.getElementById('quick-add-input');
+        if (inp) inp.focus();
+      }, 50);
+    };
+    window.openSettingsModal = function(e) {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      }
+      try { if (typeof toggleMobileSidebar === 'function') toggleMobileSidebar(false); } catch (_) {}
+      var langSel = document.getElementById('setting-lang');
+      if (langSel && typeof state !== 'undefined' && state.lang) langSel.value = state.lang;
+      var firstDaySel = document.getElementById('setting-first-day');
+      if (firstDaySel && typeof state !== 'undefined' && state.firstDayOfWeek !== undefined) {
+        firstDaySel.value = String(state.firstDayOfWeek);
+      }
+      window.openModal('settings-modal');
+    };
+
+    // Auto-wipe old service worker caches & register v18
+    if ('caches' in window) {
+      caches.keys().then(function(keys) {
+        keys.forEach(function(k) {
+          if (k !== 'kayendar-v18') caches.delete(k);
+        });
+      });
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(function(reg) {
+        reg.update();
+      }).catch(function() {});
+    }
+  </script>
 </head>
 <body>
   <div id="app">
@@ -111,7 +174,7 @@
           </div>
           <span class="mobile-app-title">Kayendar</span>
         </div>
-        <button id="mobile-quick-add-btn" class="icon-btn mobile-add-action-btn" aria-label="Cita rápida" data-tooltip="Cita rápida">
+        <button type="button" id="mobile-quick-add-btn" onclick="openQuickAdd(event)" class="icon-btn mobile-add-action-btn" aria-label="Cita rápida" data-tooltip="Cita rápida">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
@@ -192,7 +255,7 @@
               <span class="user-status-label" data-i18n="online_status">En línea</span>
             </div>
             <div class="user-actions">
-              <button id="sidebar-settings-btn" class="icon-btn" data-tooltip="Configuración y preferencias (Atajo: ,)" data-i18n-tooltip="tt_settings" aria-label="Settings">
+              <button type="button" id="sidebar-settings-btn" onclick="openSettingsModal(event)" class="icon-btn" data-tooltip="Configuración y preferencias (Atajo: ,)" data-i18n-tooltip="tt_settings" aria-label="Settings">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="3"></circle>
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -260,7 +323,7 @@
                 <span data-i18n="tasks">Tareas</span>
                 <span id="tasks-count" class="tasks-count-pill">0</span>
               </button>
-              <button id="quick-add-btn" class="btn btn-ghost btn-sm" data-tooltip="Crear cita en lenguaje natural (ej: 'Cena mañana 21:00') (Atajo: Q)" data-i18n-tooltip="tt_quick">
+              <button type="button" id="quick-add-btn" onclick="openQuickAdd(event)" class="btn btn-ghost btn-sm" data-tooltip="Crear cita en lenguaje natural (ej: 'Cena mañana 21:00') (Atajo: Q)" data-i18n-tooltip="tt_quick">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 <span data-i18n="quick_add">Cita Rápida</span>
                 <kbd class="btn-kbd">Q</kbd>
@@ -344,7 +407,7 @@
           </svg>
           <span data-i18n="tasks">Tareas</span>
         </button>
-        <button class="mobile-nav-item" id="mobile-nav-settings">
+        <button type="button" class="mobile-nav-item" id="mobile-nav-settings" onclick="openSettingsModal(event)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -547,6 +610,7 @@
               <button type="button" class="swatch" data-color="#06b6d4" style="background:#06b6d4"></button>
             </div>
           </div>
+        </div>
         <div class="field">
           <label for="col-remote-url" data-i18n="remote_sync_url">URL de Sincronización Remota (ej. Google iCal / WebCAL)</label>
           <input id="col-remote-url" type="url" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" data-i18n-placeholder="remote_url_placeholder" />
@@ -860,6 +924,6 @@
   <!-- Toast notifications -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="/assets/app.js?v=12"></script>
+  <script src="/assets/app.js?v=18"></script>
 </body>
 </html>
