@@ -1243,8 +1243,8 @@ function renderMonthView(grid) {
   }
   baseWeekdays.forEach(d => {
     const el = document.createElement('div');
-    el.className = 'cal-weekday';
-    el.textContent = d;
+    el.className = 'cal-weekday cal-day-header';
+    el.innerHTML = `<span class="cal-day-header-full">${d}</span><span class="cal-day-header-short">${d.charAt(0)}</span>`;
     weekdays.appendChild(el);
   });
   grid.appendChild(weekdays);
@@ -2462,12 +2462,38 @@ async function deleteCollection() {
 }
 
 // ── Navigation ────────────────────────────────────────────────
+function toggleMobileSidebar(show) {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (!sidebar || !overlay) return;
+  const shouldOpen = show !== undefined ? show : !sidebar.classList.contains('mobile-open');
+  if (shouldOpen) {
+    sidebar.classList.add('mobile-open');
+    overlay.classList.add('active');
+    overlay.classList.remove('hidden');
+  } else {
+    sidebar.classList.remove('mobile-open');
+    overlay.classList.remove('active');
+    overlay.classList.add('hidden');
+  }
+}
+
 function switchView(view) {
   state.activeView = view;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(`view-${view}`).classList.add('active');
+  const targetView = document.getElementById(`view-${view}`);
+  if (targetView) targetView.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  document.getElementById(`nav-${view}`).classList.add('active');
+  const navBtn = document.getElementById(`nav-${view}`);
+  if (navBtn) navBtn.classList.add('active');
+
+  document.querySelectorAll('.mobile-nav-item').forEach(b => {
+    if (b.dataset.view) {
+      b.classList.toggle('active', b.dataset.view === view);
+    }
+  });
+
+  toggleMobileSidebar(false);
   renderSidebar();
   if (view === 'contacts') renderContacts();
   if (view === 'calendar') renderCalendar();
@@ -2757,6 +2783,40 @@ document.addEventListener('DOMContentLoaded', () => {
   // Nav
   document.getElementById('nav-calendar').addEventListener('click', () => switchView('calendar'));
   document.getElementById('nav-contacts').addEventListener('click', () => switchView('contacts'));
+
+  // Mobile Topbar & Off-canvas menu listeners
+  const mobMenuBtn = document.getElementById('mobile-menu-btn');
+  if (mobMenuBtn) mobMenuBtn.addEventListener('click', () => toggleMobileSidebar());
+
+  const mobOverlay = document.getElementById('sidebar-overlay');
+  if (mobOverlay) mobOverlay.addEventListener('click', () => toggleMobileSidebar(false));
+
+  const mobQuickAddBtn = document.getElementById('mobile-quick-add-btn');
+  if (mobQuickAddBtn) mobQuickAddBtn.addEventListener('click', openQuickAdd);
+
+  // Mobile Bottom Navigation bindings
+  const mobNavCal = document.getElementById('mobile-nav-calendar');
+  if (mobNavCal) mobNavCal.addEventListener('click', () => switchView('calendar'));
+
+  const mobNavCont = document.getElementById('mobile-nav-contacts');
+  if (mobNavCont) mobNavCont.addEventListener('click', () => switchView('contacts'));
+
+  const mobFabAdd = document.getElementById('mobile-fab-add');
+  if (mobFabAdd) {
+    mobFabAdd.addEventListener('click', () => {
+      if (state.activeView === 'contacts') {
+        openNewContact();
+      } else {
+        openNewEvent(new Date());
+      }
+    });
+  }
+
+  const mobNavTasks = document.getElementById('mobile-nav-tasks');
+  if (mobNavTasks) mobNavTasks.addEventListener('click', () => toggleTasksDrawer());
+
+  const mobNavSettings = document.getElementById('mobile-nav-settings');
+  if (mobNavSettings) mobNavSettings.addEventListener('click', () => openSettingsModal());
 
   // Calendar nav
   document.getElementById('cal-prev').addEventListener('click', () => {
