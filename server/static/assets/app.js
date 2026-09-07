@@ -211,6 +211,17 @@ const i18n = {
     tt_close_tasks: 'Cerrar panel de tareas',
     tt_settings: 'Configuración y preferencias (Atajo: ,)',
 
+    // PWA & Installation
+    install_app: 'Instalar Aplicación',
+    add_to_desktop: 'Instalar App en Escritorio',
+    tt_install_app: 'Instalar Kayendar como aplicación nativa en tu pantalla de inicio o escritorio',
+    pwa_title: 'Aplicación Web (PWA)',
+    pwa_desc: 'Instala Kayendar en tu dispositivo para acceder rápidamente desde tu escritorio o pantalla de inicio.',
+    app_installed: '✓ Aplicación Instalada',
+    app_installed_success: '¡Kayendar se instaló con éxito en tu dispositivo!',
+    ios_install_hint: 'En Safari iOS: pulsa Compartir ⎋ y elige "Añadir a la pantalla de inicio ➕"',
+    pwa_browser_instructions: 'Abre el menú de tu navegador (⋮ o ⚙️) y selecciona "Instalar Kayendar" o "Añadir a la pantalla de inicio".',
+
     // Settings
     settings: 'Configuración',
     settings_title: 'Configuración y Preferencias',
@@ -459,6 +470,17 @@ const i18n = {
     tt_new_contact: 'Add new contact to address book',
     tt_close_tasks: 'Close tasks drawer',
     tt_settings: 'Settings and preferences (Shortcut: ,)',
+
+    // PWA & Installation
+    install_app: 'Install Application',
+    add_to_desktop: 'Install App on Desktop',
+    tt_install_app: 'Install Kayendar as a native application on your home screen or desktop',
+    pwa_title: 'Web Application (PWA)',
+    pwa_desc: 'Install Kayendar on your device for quick access directly from your desktop or home screen.',
+    app_installed: '✓ Application Installed',
+    app_installed_success: 'Kayendar was successfully installed on your device!',
+    ios_install_hint: 'On iOS Safari: tap Share ⎋ and choose "Add to Home Screen ➕"',
+    pwa_browser_instructions: 'Open your browser menu (⋮ or ⚙️) and select "Install Kayendar" or "Add to Home Screen".',
 
     // Settings
     settings: 'Settings',
@@ -3294,6 +3316,66 @@ document.addEventListener('DOMContentLoaded', () => {
       openModal('shortcuts-modal');
     }
   });
+
+  // PWA Installation & App Prompt
+  let deferredInstallPrompt = null;
+
+  function initPwaInstall() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    const sidebarBtn = document.getElementById('pwa-install-sidebar-btn');
+    const settingsBtn = document.getElementById('settings-pwa-install-btn');
+    const installedBadge = document.getElementById('pwa-installed-badge');
+
+    if (isStandalone) {
+      if (sidebarBtn) sidebarBtn.classList.add('hidden');
+      if (settingsBtn) settingsBtn.classList.add('hidden');
+      if (installedBadge) installedBadge.classList.remove('hidden');
+      return;
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      if (sidebarBtn) sidebarBtn.classList.remove('hidden');
+      if (settingsBtn) settingsBtn.classList.remove('hidden');
+      if (installedBadge) installedBadge.classList.add('hidden');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      if (sidebarBtn) sidebarBtn.classList.add('hidden');
+      if (settingsBtn) settingsBtn.classList.add('hidden');
+      if (installedBadge) installedBadge.classList.remove('hidden');
+      toast(t('app_installed_success'), 'success');
+    });
+
+    async function handleInstallClick() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const { outcome } = await deferredInstallPrompt.userChoice;
+        if (outcome === 'accepted') {
+          toast(t('app_installed_success'), 'success');
+          if (sidebarBtn) sidebarBtn.classList.add('hidden');
+          if (settingsBtn) settingsBtn.classList.add('hidden');
+          if (installedBadge) installedBadge.classList.remove('hidden');
+        }
+        deferredInstallPrompt = null;
+      } else {
+        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIos) {
+          toast(t('ios_install_hint'), 'info');
+        } else {
+          toast(t('pwa_browser_instructions'), 'info');
+        }
+      }
+    }
+
+    if (sidebarBtn) sidebarBtn.addEventListener('click', handleInstallClick);
+    if (settingsBtn) settingsBtn.addEventListener('click', handleInstallClick);
+  }
+
+  initPwaInstall();
 
   // PWA Service Worker Registration
   if ('serviceWorker' in navigator) {

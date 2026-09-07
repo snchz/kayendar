@@ -142,6 +142,12 @@
             </svg>
             <span data-i18n="contacts">Contactos</span>
           </button>
+          <button class="nav-item pwa-install-item hidden" id="pwa-install-sidebar-btn" data-tooltip="Instalar Kayendar como aplicación en escritorio o móvil" data-i18n-tooltip="tt_install_app">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span data-i18n="install_app">Instalar App</span>
+          </button>
         </nav>
 
         <div class="sidebar-section" id="sidebar-calendars-section">
@@ -718,6 +724,21 @@
               <option value="1" data-i18n="monday">Lunes</option>
               <option value="0" data-i18n="sunday">Domingo</option>
             </select>
+          </div>
+        </div>
+
+        <!-- PWA section -->
+        <div class="settings-section" id="pwa-settings-section">
+          <h4 class="settings-section-title" data-i18n="pwa_title">Aplicación Web (PWA)</h4>
+          <p class="settings-desc" data-i18n="pwa_desc">Instala Kayendar en tu dispositivo para acceder rápidamente desde tu escritorio o pantalla de inicio.</p>
+          <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+            <button type="button" id="settings-pwa-install-btn" class="btn btn-primary btn-sm">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span id="pwa-install-btn-text" data-i18n="install_app">Instalar App</span>
+            </button>
+            <span id="pwa-installed-badge" class="badge badge-success hidden" data-i18n="app_installed">✓ Aplicación Instalada</span>
           </div>
         </div>
 
