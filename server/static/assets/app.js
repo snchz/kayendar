@@ -3429,30 +3429,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('appinstalled', () => {
       deferredInstallPrompt = null;
+      window.deferredInstallPrompt = null;
       if (sidebarBtn) sidebarBtn.classList.add('hidden');
       if (settingsBtn) settingsBtn.classList.add('hidden');
       if (installedBadge) installedBadge.classList.remove('hidden');
+      const helpBox = document.getElementById('pwa-install-instructions');
+      if (helpBox) helpBox.classList.add('hidden');
       toast(t('app_installed_success'), 'success');
     });
 
-    async function handleInstallClick() {
-      if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        const { outcome } = await deferredInstallPrompt.userChoice;
-        if (outcome === 'accepted') {
-          toast(t('app_installed_success'), 'success');
-          if (sidebarBtn) sidebarBtn.classList.add('hidden');
-          if (settingsBtn) settingsBtn.classList.add('hidden');
-          if (installedBadge) installedBadge.classList.remove('hidden');
-        }
-        deferredInstallPrompt = null;
-      } else {
-        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        if (isIos) {
-          toast(t('ios_install_hint'), 'info');
-        } else {
-          toast(t('pwa_browser_instructions'), 'info');
-        }
+    function handleInstallClick(e) {
+      if (typeof window.handlePwaInstall === 'function') {
+        window.handlePwaInstall(e);
       }
     }
 

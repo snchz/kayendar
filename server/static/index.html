@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/app.css?v=18" />
+  <link rel="stylesheet" href="/assets/app.css?v=19" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#6366f1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -65,11 +65,86 @@
       window.openModal('settings-modal');
     };
 
-    // Auto-wipe old service worker caches & register v18
+    // PWA early prompt capture & handler
+    window.deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.deferredInstallPrompt = e;
+      var b1 = document.getElementById('pwa-install-sidebar-btn');
+      var b2 = document.getElementById('settings-pwa-install-btn');
+      if (b1) b1.classList.remove('hidden');
+      if (b2) b2.classList.remove('hidden');
+    });
+
+    window.handlePwaInstall = async function(e) {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      }
+
+      var prompt = window.deferredInstallPrompt;
+      var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      var installedBadge = document.getElementById('pwa-installed-badge');
+      var sidebarBtn = document.getElementById('pwa-install-sidebar-btn');
+      var settingsBtn = document.getElementById('settings-pwa-install-btn');
+      var helpBox = document.getElementById('pwa-install-instructions');
+      var helpContent = document.getElementById('pwa-install-instructions-content');
+
+      if (isStandalone) {
+        if (installedBadge) installedBadge.classList.remove('hidden');
+        if (sidebarBtn) sidebarBtn.classList.add('hidden');
+        if (settingsBtn) settingsBtn.classList.add('hidden');
+        if (typeof toast === 'function') toast('¡Kayendar ya está instalada!', 'success');
+        return;
+      }
+
+      if (prompt) {
+        prompt.prompt();
+        try {
+          var choice = await prompt.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            if (typeof toast === 'function') toast('¡Aplicación instalada con éxito!', 'success');
+            if (installedBadge) installedBadge.classList.remove('hidden');
+            if (sidebarBtn) sidebarBtn.classList.add('hidden');
+            if (settingsBtn) settingsBtn.classList.add('hidden');
+          }
+        } catch (_) {}
+        window.deferredInstallPrompt = null;
+      } else {
+        var ua = navigator.userAgent || '';
+        var isIos = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        var isAndroid = /Android/.test(ua);
+        var instructionHtml = '';
+        var toastMsg = '';
+
+        if (isIos) {
+          instructionHtml = '<strong>📲 Para instalar en iPhone / iPad:</strong><br/>1. Pulsa el botón <strong>Compartir</strong> (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; display:inline-block;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>) en la barra de Safari.<br/>2. Baja un poco y pulsa <strong>«Añadir a la pantalla de inicio» (➕)</strong>.';
+          toastMsg = 'Pulsa Compartir y "Añadir a pantalla de inicio"';
+        } else if (isAndroid) {
+          instructionHtml = '<strong>📲 Para instalar en Android:</strong><br/>1. Pulsa los <strong>3 puntos verticales (⋮)</strong> arriba a la derecha en Chrome.<br/>2. Selecciona <strong>«Instalar aplicación»</strong> o <strong>«Añadir a la pantalla de inicio»</strong>.';
+          toastMsg = 'Abre el menú (⋮) y elige "Instalar aplicación"';
+        } else {
+          instructionHtml = '<strong>💻 Para instalar en tu equipo:</strong><br/>1. Abre el menú (<strong>⋮</strong> o <strong>⚙️</strong>) del navegador.<br/>2. Pulsa <strong>«Instalar Kayendar»</strong> o el icono de instalación en la barra de direcciones.';
+          toastMsg = 'Abre el menú del navegador y pulsa "Instalar Kayendar"';
+        }
+
+        if (helpBox && helpContent) {
+          helpContent.innerHTML = instructionHtml;
+          helpBox.classList.remove('hidden');
+          helpBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        if (typeof toast === 'function') {
+          toast(toastMsg, 'info');
+        }
+      }
+    };
+
+    // Auto-wipe old service worker caches & register v19
     if ('caches' in window) {
       caches.keys().then(function(keys) {
         keys.forEach(function(k) {
-          if (k !== 'kayendar-v18') caches.delete(k);
+          if (k !== 'kayendar-v19') caches.delete(k);
         });
       });
     }
@@ -217,7 +292,7 @@
             </svg>
             <span data-i18n="contacts">Contactos</span>
           </button>
-          <button class="nav-item pwa-install-item hidden" id="pwa-install-sidebar-btn" data-tooltip="Instalar Kayendar como aplicación en escritorio o móvil" data-i18n-tooltip="tt_install_app">
+          <button type="button" class="nav-item pwa-install-item hidden" id="pwa-install-sidebar-btn" onclick="handlePwaInstall(event)" data-tooltip="Instalar Kayendar como aplicación en escritorio o móvil" data-i18n-tooltip="tt_install_app">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
@@ -807,14 +882,17 @@
         <div class="settings-section" id="pwa-settings-section">
           <h4 class="settings-section-title" data-i18n="pwa_title">Aplicación Web (PWA)</h4>
           <p class="settings-desc" data-i18n="pwa_desc">Instala Kayendar en tu dispositivo para acceder rápidamente desde tu escritorio o pantalla de inicio.</p>
-          <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
-            <button type="button" id="settings-pwa-install-btn" class="btn btn-primary btn-sm">
+          <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <button type="button" id="settings-pwa-install-btn" onclick="handlePwaInstall(event)" class="btn btn-primary btn-sm">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
               <span id="pwa-install-btn-text" data-i18n="install_app">Instalar App</span>
             </button>
             <span id="pwa-installed-badge" class="badge badge-success hidden" data-i18n="app_installed">✓ Aplicación Instalada</span>
+          </div>
+          <div id="pwa-install-instructions" class="pwa-install-help hidden" style="margin-top: 12px; padding: 14px 16px; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: var(--radius-sm); font-size: 13px; line-height: 1.6; color: var(--text-primary);">
+            <div id="pwa-install-instructions-content"></div>
           </div>
         </div>
 
@@ -924,6 +1002,6 @@
   <!-- Toast notifications -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="/assets/app.js?v=18"></script>
+  <script src="/assets/app.js?v=19"></script>
 </body>
 </html>
