@@ -252,6 +252,37 @@ const i18n = {
     share_link_copied: 'Enlace copiado al portapapeles',
     share_link_revoked: 'Enlace público revocado',
     url_copied: 'URL copiada al portapapeles',
+
+    event_recurrence: 'Repetición',
+    recurrence_none: 'No se repite',
+    recurrence_daily: 'Cada día',
+    recurrence_weekly: 'Cada semana',
+    recurrence_biweekly: 'Cada 2 semanas',
+    recurrence_monthly: 'Cada mes',
+    recurrence_yearly: 'Cada año',
+
+    omnisearch_placeholder: 'Buscar citas, tareas o contactos... (Ctrl+K)',
+    omni_all: 'Todos',
+    omni_events: '📅 Citas',
+    omni_tasks: '📋 Tareas',
+    omni_contacts: '👤 Contactos',
+    omni_navigate: 'Navegar',
+    omni_select: 'Abrir',
+    omni_close: 'Cerrar',
+    omni_no_results: 'No se encontraron resultados para "{q}"',
+    sc_omnisearch: 'Búsqueda Global',
+
+    modal_merge_contacts: '🧹 Limpieza y Fusión de Contactos',
+    clean_duplicates: 'Duplicados',
+    tt_merge_contacts: 'Buscar y fusionar contactos duplicados',
+    merge_all: 'Fusionar Todos',
+    merge_pair: 'Fusionar',
+    no_duplicates_found: '¡Todo en orden! No se encontraron contactos duplicados.',
+    duplicate_by_phone: 'Mismo número de teléfono',
+    duplicate_by_email: 'Mismo correo electrónico',
+    duplicate_by_name: 'Mismo nombre completo',
+    contacts_merged: 'Se fusionaron los contactos correctamente',
+    offline_mode_active: 'Modo sin conexión: mostrando datos en caché local',
   },
   en: {
     // Nav & General
@@ -465,6 +496,37 @@ const i18n = {
     share_link_copied: 'Share link copied to clipboard',
     share_link_revoked: 'Share link revoked',
     url_copied: 'URL copied to clipboard',
+
+    event_recurrence: 'Recurrence',
+    recurrence_none: 'Does not repeat',
+    recurrence_daily: 'Daily',
+    recurrence_weekly: 'Weekly',
+    recurrence_biweekly: 'Every 2 weeks',
+    recurrence_monthly: 'Monthly',
+    recurrence_yearly: 'Yearly',
+
+    omnisearch_placeholder: 'Search events, tasks or contacts... (Ctrl+K)',
+    omni_all: 'All',
+    omni_events: '📅 Events',
+    omni_tasks: '📋 Tasks',
+    omni_contacts: '👤 Contacts',
+    omni_navigate: 'Navigate',
+    omni_select: 'Open',
+    omni_close: 'Close',
+    omni_no_results: 'No results found for "{q}"',
+    sc_omnisearch: 'Global Search',
+
+    modal_merge_contacts: '🧹 Clean & Merge Contacts',
+    clean_duplicates: 'Duplicates',
+    tt_merge_contacts: 'Find and merge duplicate contacts',
+    merge_all: 'Merge All',
+    merge_pair: 'Merge',
+    no_duplicates_found: 'All clean! No duplicate contacts found.',
+    duplicate_by_phone: 'Same phone number',
+    duplicate_by_email: 'Same email address',
+    duplicate_by_name: 'Same full name',
+    contacts_merged: 'Contacts merged successfully',
+    offline_mode_active: 'Offline mode: displaying local cached data',
   }
 };
 
@@ -578,6 +640,7 @@ function parseIcs(content) {
     if (key === 'LOCATION')    cur.location = val;
     if (key === 'TRIGGER' && inAlarm) cur.alarm = val;
     if (key === 'UID')       cur.uid = val;
+    if (key === 'RRULE')     cur.rrule = val;
   }
   return events;
 }
@@ -624,7 +687,7 @@ function formatIcsDate(d, allDay = false) {
   return `${y}${mo}${dd}T${h}${mi}${s}`;
 }
 
-function buildIcs(uid, title, start, end, description = '', location = '', alarm = '') {
+function buildIcs(uid, title, start, end, description = '', location = '', alarm = '', rrule = '') {
   const now = formatIcsDate(new Date()) + 'Z';
   const alarmLines = alarm ? [
     'BEGIN:VALARM',
@@ -645,6 +708,7 @@ function buildIcs(uid, title, start, end, description = '', location = '', alarm
     `SUMMARY:${title}`,
     description ? `DESCRIPTION:${description}` : '',
     location ? `LOCATION:${location}` : '',
+    rrule ? `RRULE:${rrule}` : '',
     ...alarmLines,
     'END:VEVENT',
     'END:VCALENDAR',
@@ -775,32 +839,68 @@ function generateUid() {
 
 // ── Load all data ────────────────────────────────────────────
 async function loadAllData() {
-  state.collections = await api.get('/api/collections');
-  state.events = {};
-  state.contacts = {};
-  state.tasks = {};
+  try {
+    state.collections = await api.get('/api/collections');
+    state.events = {};
+    state.contacts = {};
+    state.tasks = {};
 
-  for (const col of state.collections) {
-    try {
-      const items = await api.get(`/api/collections/${col.slug}/items`);
-      if (col.type === 'calendar') {
-        state.events[col.slug] = [];
-        state.tasks[col.slug] = [];
-        for (const i of items) {
-          const evs = parseIcs(i.content);
-          evs.forEach(e => state.events[col.slug].push({ ...e, filename: i.filename, collectionSlug: col.slug, collectionColor: col.color }));
-          const todos = parseTodos(i.content);
-          todos.forEach(t => state.tasks[col.slug].push({ ...t, filename: i.filename, collectionSlug: col.slug, collectionColor: col.color }));
+    for (const col of state.collections) {
+      try {
+        const items = await api.get(`/api/collections/${col.slug}/items`);
+        if (col.type === 'calendar') {
+          state.events[col.slug] = [];
+          state.tasks[col.slug] = [];
+          for (const i of items) {
+            const evs = parseIcs(i.content);
+            evs.forEach(e => state.events[col.slug].push({ ...e, filename: i.filename, collectionSlug: col.slug, collectionColor: col.color }));
+            const todos = parseTodos(i.content);
+            todos.forEach(t => state.tasks[col.slug].push({ ...t, filename: i.filename, collectionSlug: col.slug, collectionColor: col.color }));
+          }
+        } else {
+          state.contacts[col.slug] = items.flatMap(i => {
+            const cs = parseVcf(i.content);
+            return cs.map(c => ({ ...c, filename: i.filename, collectionSlug: col.slug }));
+          });
         }
-      } else {
-        state.contacts[col.slug] = items.flatMap(i => {
-          const cs = parseVcf(i.content);
-          return cs.map(c => ({ ...c, filename: i.filename, collectionSlug: col.slug }));
-        });
-      }
-    } catch { /* skip */ }
+      } catch { /* skip */ }
+    }
+    updateTasksCount();
+    try {
+      localStorage.setItem('kayendar_offline_cache', JSON.stringify({
+        collections: state.collections,
+        events: state.events,
+        contacts: state.contacts,
+        tasks: state.tasks
+      }));
+    } catch { /* ignore quota */ }
+  } catch (err) {
+    const cached = localStorage.getItem('kayendar_offline_cache');
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        state.collections = data.collections || [];
+        state.events = data.events || {};
+        for (const slug in state.events) {
+          state.events[slug].forEach(e => {
+            if (e.start) e.start = new Date(e.start);
+            if (e.end) e.end = new Date(e.end);
+          });
+        }
+        state.contacts = data.contacts || {};
+        state.tasks = data.tasks || {};
+        for (const slug in state.tasks) {
+          state.tasks[slug].forEach(t => {
+            if (t.due) t.due = new Date(t.due);
+          });
+        }
+        updateTasksCount();
+        toast(t('offline_mode_active'), 'info');
+      } catch { /* ignore parse error */ }
+    } else {
+      throw err;
+    }
   }
-  updateTasksCount();
 }
 
 // ── Collections sidebar ──────────────────────────────────────
@@ -982,6 +1082,63 @@ function allEvents() {
   return list;
 }
 
+function getEventsForDate(targetDate) {
+  const targetMidnight = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+  const list = [];
+  const seenUids = new Set();
+
+  for (const ev of allEvents()) {
+    if (!ev.start) continue;
+    const startMidnight = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate());
+
+    if (isSameDay(ev.start, targetDate)) {
+      list.push(ev);
+      seenUids.add(ev.uid);
+      continue;
+    }
+
+    if (ev.rrule && targetMidnight > startMidnight && !seenUids.has(ev.uid)) {
+      let matches = false;
+      const rrule = ev.rrule.toUpperCase();
+      const diffMs = targetMidnight.getTime() - startMidnight.getTime();
+      const diffDays = Math.round(diffMs / 86400000);
+
+      const untilMatch = rrule.match(/UNTIL=([0-9TZ]+)/);
+      if (untilMatch) {
+        const untilDate = parseIcsDate(untilMatch[1]);
+        if (targetMidnight > untilDate) continue;
+      }
+
+      if (rrule.includes('FREQ=DAILY')) {
+        matches = true;
+      } else if (rrule.includes('FREQ=WEEKLY')) {
+        if (rrule.includes('INTERVAL=2')) {
+          matches = (targetMidnight.getDay() === startMidnight.getDay()) && ((Math.round(diffDays / 7)) % 2 === 0);
+        } else {
+          matches = (targetMidnight.getDay() === startMidnight.getDay());
+        }
+      } else if (rrule.includes('FREQ=MONTHLY')) {
+        matches = (targetMidnight.getDate() === startMidnight.getDate());
+      } else if (rrule.includes('FREQ=YEARLY')) {
+        matches = (targetMidnight.getDate() === startMidnight.getDate() && targetMidnight.getMonth() === startMidnight.getMonth());
+      }
+
+      if (matches) {
+        const duration = ev.end ? (ev.end.getTime() - ev.start.getTime()) : 3600000;
+        const instStart = new Date(targetMidnight.getFullYear(), targetMidnight.getMonth(), targetMidnight.getDate(), ev.start.getHours(), ev.start.getMinutes(), ev.start.getSeconds());
+        const instEnd = new Date(instStart.getTime() + duration);
+        list.push({
+          ...ev,
+          start: instStart,
+          end: instEnd,
+          isRecurringInstance: true,
+        });
+      }
+    }
+  }
+  return list;
+}
+
 function renderCalendar() {
   const grid = document.getElementById('calendar-grid');
   grid.innerHTML = '';
@@ -1052,7 +1209,7 @@ function createDayCell(date, otherMonth) {
   cell.appendChild(num);
 
   // Events for this day
-  const dayEvents = allEvents().filter(e => e.start && isSameDay(e.start, date));
+  const dayEvents = getEventsForDate(date);
   if (dayEvents.length) {
     const evContainer = document.createElement('div');
     evContainer.className = 'cal-events';
@@ -1060,7 +1217,8 @@ function createDayCell(date, otherMonth) {
     show.forEach(ev => {
       const evEl = document.createElement('div');
       evEl.className = 'cal-event';
-      evEl.textContent = ev.title || t('untitled');
+      const isRecur = ev.rrule || ev.isRecurringInstance;
+      evEl.textContent = (isRecur ? '🔁 ' : '') + (ev.title || t('untitled'));
       evEl.style.background = (ev.collectionColor || '#6366f1') + '33';
       evEl.style.color = ev.collectionColor || '#818cf8';
       evEl.title = ev.title;
@@ -1217,7 +1375,7 @@ function renderWeekView(grid) {
     }
 
     // Events
-    const dayEvents = allEvents().filter(e => e.start && isSameDay(e.start, dayDate));
+    const dayEvents = getEventsForDate(dayDate);
     dayEvents.forEach(ev => {
       const startH = ev.start.getHours() + ev.start.getMinutes()/60;
       const endH   = ev.end ? ev.end.getHours() + ev.end.getMinutes()/60 : startH + 1;
@@ -1226,7 +1384,8 @@ function renderWeekView(grid) {
 
       const evEl = document.createElement('div');
       evEl.className = 'week-event';
-      evEl.textContent = ev.title || t('untitled');
+      const isRecur = ev.rrule || ev.isRecurringInstance;
+      evEl.textContent = (isRecur ? '🔁 ' : '') + (ev.title || t('untitled'));
       evEl.style.top = `${top}px`;
       evEl.style.height = `${height}px`;
       evEl.style.background = (ev.collectionColor || '#6366f1') + '44';
@@ -1628,6 +1787,8 @@ function openNewEvent(date) {
   document.getElementById('event-uid').value = '';
   document.getElementById('event-filename').value = '';
   document.getElementById('event-collection').value = '';
+  const rruleSel = document.getElementById('event-rrule');
+  if (rruleSel) rruleSel.value = '';
   document.getElementById('event-delete-btn').classList.add('hidden');
 
   // Default times
@@ -1674,6 +1835,9 @@ function openEditEvent(ev) {
   }
   alarmSelect.value = alarmValue;
 
+  const rruleSel = document.getElementById('event-rrule');
+  if (rruleSel) rruleSel.value = ev.rrule || '';
+
   document.getElementById('event-description').value = ev.description || '';
   if (ev.start) document.getElementById('event-start').value = toDatetimeLocal(ev.start);
   if (ev.end)   document.getElementById('event-end').value   = toDatetimeLocal(ev.end);
@@ -1713,6 +1877,7 @@ async function saveEvent(e) {
   const end   = new Date(document.getElementById('event-end').value);
   const location = document.getElementById('event-location').value.trim();
   const alarm    = document.getElementById('event-alarm').value;
+  const rrule    = document.getElementById('event-rrule')?.value || '';
   const description = document.getElementById('event-description').value.trim();
   const slug  = document.getElementById('event-calendar').value;
   let uid     = document.getElementById('event-uid').value;
@@ -1724,7 +1889,7 @@ async function saveEvent(e) {
   if (!uid) uid = generateUid();
   if (!filename) filename = uid + '.ics';
 
-  const content = buildIcs(uid, title, start, end, description, location, alarm);
+  const content = buildIcs(uid, title, start, end, description, location, alarm, rrule);
 
   try {
     await api.put(`/api/collections/${slug}/items/${filename}`, { content });
@@ -2149,10 +2314,220 @@ async function initApp() {
     avatarInit.textContent = state.user.charAt(0).toUpperCase();
   }
 
-  await loadAllData();
-  renderSidebar();
-  renderCalendar();
-  renderTasks();
+// ── Omnisearch / Command Palette ─────────────────────────────
+let omnisearchActiveFilter = 'all';
+let omnisearchSelectedIndex = 0;
+let omnisearchResultsData = [];
+
+function openOmnisearch() {
+  const modal = document.getElementById('omnisearch-modal');
+  if (!modal) return;
+  const input = document.getElementById('omnisearch-input');
+  if (input) input.value = '';
+  omnisearchActiveFilter = 'all';
+  omnisearchSelectedIndex = 0;
+  document.querySelectorAll('.omni-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === 'all');
+  });
+  renderOmnisearchResults();
+  openModal('omnisearch-modal');
+  setTimeout(() => input?.focus(), 50);
+}
+
+function renderOmnisearchResults() {
+  const input = document.getElementById('omnisearch-input');
+  const resultsContainer = document.getElementById('omnisearch-results');
+  if (!resultsContainer) return;
+
+  const query = (input?.value || '').trim().toLowerCase();
+  omnisearchResultsData = [];
+
+  // Gather events
+  if (omnisearchActiveFilter === 'all' || omnisearchActiveFilter === 'events') {
+    for (const ev of allEvents()) {
+      if (!query || (ev.title && ev.title.toLowerCase().includes(query)) || (ev.description && ev.description.toLowerCase().includes(query)) || (ev.location && ev.location.toLowerCase().includes(query))) {
+        omnisearchResultsData.push({
+          type: 'event',
+          title: ev.title || t('untitled'),
+          subtitle: ev.start ? ev.start.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '',
+          item: ev
+        });
+      }
+    }
+  }
+
+  // Gather tasks
+  if (omnisearchActiveFilter === 'all' || omnisearchActiveFilter === 'tasks') {
+    for (const slug in state.tasks) {
+      for (const task of state.tasks[slug]) {
+        if (!query || (task.title && task.title.toLowerCase().includes(query)) || (task.description && task.description.toLowerCase().includes(query))) {
+          omnisearchResultsData.push({
+            type: 'task',
+            title: (task.completed ? '✅ ' : '⏳ ') + (task.title || t('untitled')),
+            subtitle: task.due ? `${t('due')}: ${task.due.toLocaleDateString()}` : '',
+            item: task
+          });
+        }
+      }
+    }
+  }
+
+  // Gather contacts
+  if (omnisearchActiveFilter === 'all' || omnisearchActiveFilter === 'contacts') {
+    for (const c of allContacts()) {
+      if (!query || (c.fn && c.fn.toLowerCase().includes(query)) || (c.email && c.email.toLowerCase().includes(query)) || (c.phones && c.phones.some(p => p.number.includes(query)))) {
+        omnisearchResultsData.push({
+          type: 'contact',
+          title: c.fn || t('unnamed'),
+          subtitle: c.email || (c.phones && c.phones[0] ? c.phones[0].number : ''),
+          item: c
+        });
+      }
+    }
+  }
+
+  if (omnisearchResultsData.length === 0) {
+    resultsContainer.innerHTML = `<div class="omnisearch-empty">${t('omni_no_results', { q: escapeHtml(query) })}</div>`;
+    return;
+  }
+
+  if (omnisearchSelectedIndex >= omnisearchResultsData.length) {
+    omnisearchSelectedIndex = 0;
+  }
+
+  resultsContainer.innerHTML = omnisearchResultsData.map((res, idx) => `
+    <div class="omni-result-item ${idx === omnisearchSelectedIndex ? 'selected' : ''}" data-idx="${idx}">
+      <div class="omni-result-icon">${res.type === 'event' ? '📅' : res.type === 'task' ? '📋' : '👤'}</div>
+      <div class="omni-result-details">
+        <div class="omni-result-title">${escapeHtml(res.title)}</div>
+        ${res.subtitle ? `<div class="omni-result-sub">${escapeHtml(res.subtitle)}</div>` : ''}
+      </div>
+      <kbd class="omni-result-enter">↵</kbd>
+    </div>
+  `).join('');
+
+  resultsContainer.querySelectorAll('.omni-result-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.idx, 10);
+      selectOmnisearchItem(idx);
+    });
+  });
+}
+
+function selectOmnisearchItem(idx) {
+  const item = omnisearchResultsData[idx];
+  if (!item) return;
+  closeModal('omnisearch-modal');
+  if (item.type === 'event') {
+    openEditEvent(item.item);
+  } else if (item.type === 'contact') {
+    openEditContact(item.item);
+  } else if (item.type === 'task') {
+    const drawer = document.getElementById('tasks-drawer');
+    if (drawer && drawer.classList.contains('hidden')) {
+      toggleTasksDrawer();
+    }
+  }
+}
+
+// ── Contact Deduplication & Merging ───────────────────────────
+function openMergeContactsModal() {
+  const body = document.getElementById('merge-contacts-body');
+  const mergeAllBtn = document.getElementById('merge-all-btn');
+  if (!body) return;
+
+  const contacts = allContacts();
+  const duplicates = [];
+
+  for (let i = 0; i < contacts.length; i++) {
+    for (let j = i + 1; j < contacts.length; j++) {
+      const c1 = contacts[i];
+      const c2 = contacts[j];
+      let reason = null;
+
+      if (c1.fn && c2.fn && c1.fn.trim().toLowerCase() === c2.fn.trim().toLowerCase()) {
+        reason = t('duplicate_by_name');
+      } else if (c1.email && c2.email && c1.email.trim().toLowerCase() === c2.email.trim().toLowerCase()) {
+        reason = t('duplicate_by_email');
+      } else {
+        const p1s = (c1.phones || []).map(p => p.number.replace(/\D/g, '')).filter(Boolean);
+        const p2s = (c2.phones || []).map(p => p.number.replace(/\D/g, '')).filter(Boolean);
+        if (p1s.some(p => p2s.includes(p))) {
+          reason = t('duplicate_by_phone');
+        }
+      }
+
+      if (reason) {
+        duplicates.push({ c1, c2, reason });
+      }
+    }
+  }
+
+  if (duplicates.length === 0) {
+    body.innerHTML = `<div class="merge-empty-state"><div class="empty-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">✨</div><p>${t('no_duplicates_found')}</p></div>`;
+    if (mergeAllBtn) mergeAllBtn.classList.add('hidden');
+  } else {
+    if (mergeAllBtn) mergeAllBtn.classList.remove('hidden');
+    body.innerHTML = duplicates.map((pair, idx) => `
+      <div class="merge-card glass" data-idx="${idx}">
+        <div class="merge-card-header">
+          <span class="badge badge-warning">${escapeHtml(pair.reason)}</span>
+          <button type="button" class="btn btn-sm btn-primary merge-pair-btn" data-idx="${idx}">${t('merge_pair')}</button>
+        </div>
+        <div class="merge-comparison">
+          <div class="merge-contact-side">
+            <strong>${escapeHtml(pair.c1.fn || t('unnamed'))}</strong>
+            <div>📱 ${pair.c1.phones?.map(p => p.number).join(', ') || '-'}</div>
+            <div>✉️ ${pair.c1.email || '-'}</div>
+          </div>
+          <div class="merge-vs">⚡</div>
+          <div class="merge-contact-side">
+            <strong>${escapeHtml(pair.c2.fn || t('unnamed'))}</strong>
+            <div>📱 ${pair.c2.phones?.map(p => p.number).join(', ') || '-'}</div>
+            <div>✉️ ${pair.c2.email || '-'}</div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    body.querySelectorAll('.merge-pair-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const idx = parseInt(btn.dataset.idx, 10);
+        await mergeContactPair(duplicates[idx]);
+        openMergeContactsModal();
+      });
+    });
+  }
+
+  openModal('merge-contacts-modal');
+}
+
+async function mergeContactPair(pair) {
+  const { c1, c2 } = pair;
+  const mergedFn = c1.fn || c2.fn;
+  const mergedEmail = c1.email || c2.email;
+  const mergedOrg = c1.org || c2.org;
+  const mergedTitle = c1.title || c2.title;
+  const mergedAdr = c1.adr || c2.adr;
+  const mergedBday = c1.bday || c2.bday;
+  const mergedNote = [c1.note, c2.note].filter(Boolean).join(' | ');
+
+  const phoneMap = new Map();
+  (c1.phones || []).forEach(p => phoneMap.set(p.number, p.type));
+  (c2.phones || []).forEach(p => { if (!phoneMap.has(p.number)) phoneMap.set(p.number, p.type); });
+  const mergedPhones = Array.from(phoneMap.entries()).map(([number, type]) => ({ number, type }));
+
+  const vcfContent = buildVcf(c1.uid || generateUid(), mergedFn, mergedPhones, mergedEmail, mergedOrg, mergedTitle, mergedAdr, mergedBday, mergedNote);
+
+  try {
+    await api.put(`/api/collections/${c1.collectionSlug}/items/${c1.filename}`, { content: vcfContent });
+    await api.delete(`/api/collections/${c2.collectionSlug}/items/${c2.filename}`);
+    toast(t('contacts_merged'));
+    await loadAllData();
+    renderContacts();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 // ── Boot ──────────────────────────────────────────────────────
@@ -2537,11 +2912,63 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Contacts search
-  document.getElementById('contacts-search').addEventListener('input', renderContacts);
+  // Contacts search & Merge duplicates
+  const contactsSearchInput = document.getElementById('contacts-search');
+  if (contactsSearchInput) {
+    contactsSearchInput.addEventListener('input', renderContacts);
+  }
+
+  const mergeContactsBtn = document.getElementById('merge-contacts-btn');
+  if (mergeContactsBtn) {
+    mergeContactsBtn.addEventListener('click', openMergeContactsModal);
+  }
+
+  // Omnisearch / Command Palette listeners
+  const omnisearchInput = document.getElementById('omnisearch-input');
+  if (omnisearchInput) {
+    omnisearchInput.addEventListener('input', () => {
+      omnisearchSelectedIndex = 0;
+      renderOmnisearchResults();
+    });
+
+    omnisearchInput.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (omnisearchResultsData.length > 0) {
+          omnisearchSelectedIndex = (omnisearchSelectedIndex + 1) % omnisearchResultsData.length;
+          renderOmnisearchResults();
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (omnisearchResultsData.length > 0) {
+          omnisearchSelectedIndex = (omnisearchSelectedIndex - 1 + omnisearchResultsData.length) % omnisearchResultsData.length;
+          renderOmnisearchResults();
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        selectOmnisearchItem(omnisearchSelectedIndex);
+      }
+    });
+  }
+
+  document.querySelectorAll('.omni-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      omnisearchActiveFilter = btn.dataset.filter;
+      document.querySelectorAll('.omni-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      omnisearchSelectedIndex = 0;
+      renderOmnisearchResults();
+    });
+  });
 
   // Keyboard navigation & shortcuts
   document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      openOmnisearch();
+      return;
+    }
+
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) {
       if (e.key === 'Escape') {
