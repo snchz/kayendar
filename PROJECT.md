@@ -15,12 +15,17 @@ Kayendar is a lightweight, self-contained CalDAV and CardDAV synchronization ser
     - Zero-external-dependency Single Page Application with executive glassmorphic UI.
     - Ergonomic calendar navigation cluster (`[ Hoy ]` `[ ‹ ]` `[ › ]` `[ Mes/Año ]`), real-time live timeline indicator (`.now-indicator`) with pulsing beacon in Week View.
     - Consolidated Settings & Preferences modal and sleek Sidebar User Card (`🟢 En línea`, avatar, quick settings, logout).
-    - Advanced contact management with multi-phone support (Mobile, Work, Home, Other), physical address with map links (`ADR`), company/organization (`ORG`), job title (`TITLE`), notes (`NOTE`), birthdays (`BDAY`), and click-to-call/email.
+    - Advanced contact management with multi-phone and multi-email support (Personal ✉️, Work 💼, Home 🏠, Other 📧), contact deduplication & vCard fusion tool, physical address with map links (`ADR`), company (`ORG`), job title (`TITLE`), notes (`NOTE`), birthdays (`BDAY`), and click-to-call/email.
+    - Automatic synthesis of contact birthdays (`BDAY`) onto the calendar grid with age calculation and 1-click contact card opening (`🎂`).
+    - Omnisearch Command Palette (`Ctrl+K`) for instant global search across events, tasks, and contacts.
+    - Remote iCal Subscription & Auto-Sync (`remote_url`) supporting background polling for external feeds (such as Google Calendar secret iCal URL).
+    - Event recurrence pattern support (RRULE: Daily, Weekly, Bi-weekly, Monthly, Yearly) with visual indicator (`🔁`).
     - Contextual sidebar: displays calendars only in Calendar view and address books only in Contacts view, with click-to-filter address book collections.
     - Natural language "Quick Add" event parser in Spanish and English (Shortcut `Q`).
     - Inline calendar creation directly inside event creation dialogs.
     - VTODO tasks side drawer with drag-and-drop scheduling onto the calendar.
     - Public iCal token subscriptions, 1-click `.ics` calendar & `.vcf` address book export/import, and configurable week start (Monday / Sunday).
+    - PWA offline shell with Service Worker & LocalStorage fallback, enabling mobile alarms (`VALARM`) to sound locally anywhere without network/VPN.
     - Bilingual live toggle (ES / EN).
 
 ## Milestones

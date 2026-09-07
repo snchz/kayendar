@@ -20,10 +20,14 @@
 
 Kayendar is a simple, lightweight, and self-hosted CalDAV/CardDAV server designed to sync your calendars and contacts across devices (iOS, Android, Thunderbird, One Calendar) while providing a premium, interactive web interface.
 
-## Features
-
+- 🔍 **Omnisearch Command Palette (`Ctrl+K`)** — Global search across events, tasks, and contacts with live filter chips and instant keyboard navigation (`↑`, `↓`, `Enter`).
+- 🧹 **Contact Deduplication & Fusion** — Interactive tool to automatically detect duplicate contacts by phone, email, or full name and merge vCards without losing fields.
+- 🔁 **Event Recurrence (RRULE)** — RFC 5545 recurrence pattern support (Daily, Weekly, Bi-weekly, Monthly, Yearly) displayed with visual indicator (`🔁`).
+- 📡 **Remote iCal Subscription & Auto-Sync** — Subscribe to external calendar URLs (e.g. Google Calendar Secret iCal URL `https://calendar.google.com/calendar/ical/.../basic.ics`) for automatic background polling and 1-click sync.
+- 🎂 **Automatic Contact Birthday Calendar** — Contact birthdays (`BDAY`) automatically synthesized onto the calendar grid with age calculation and 1-click contact card opening (`🎂`).
+- 📱 **PWA Offline Shell & Native Mobile Notifications** — Full PWA support with LocalStorage fallback for offline browsing. Native mobile device alarms (`VALARM`) trigger reminders anywhere on your phone without needing internet or VPN.
 - 📅 **CalDAV Server & RFC 6764 Auto-Discovery** — Full calendar synchronization with iOS, macOS, Android (DAVx⁵/OpenSync), Thunderbird, and One Calendar with zero configuration headaches via `/.well-known/caldav` and `/.well-known/carddav`.
-- 📇 **CardDAV Server & Rich Contacts** — Contact synchronization with standard clients, supporting unlimited categorized phone numbers (Mobile 📱, Work 💼, Home 🏠, Other 📞), physical addresses (`ADR`) with 1-click Google Maps navigation, company (`ORG`), job title (`TITLE`), birthdays (`BDAY`), multi-line notes (`NOTE`), multiple emails, and direct click-to-call / click-to-email links.
+- 📇 **CardDAV Server & Rich Contacts** — Contact synchronization with standard clients, supporting unlimited categorized phone numbers (Mobile 📱, Work 💼, Home 🏠, Other 📞), multiple emails (Personal ✉️, Work 💼, Home 🏠, Other 📧), physical addresses (`ADR`) with 1-click Google Maps navigation, company (`ORG`), job title (`TITLE`), birthdays (`BDAY`), multi-line notes (`NOTE`), and direct click-to-call / click-to-email links.
 - 📁 **Contextual Sidebar & Address Book Filter** — Clean interface that automatically adapts: shows calendars only when viewing the calendar, and address books only when in contacts view (with click-to-filter by address book).
 - 🌐 **Modern SPA Web Client** — Gorgeous glassmorphic user interface supporting responsive month/week views, event creation, live now-timeline indicator, and rich contact management.
 - ⚡ **Natural Language Quick Add** — Create events typing naturally in Spanish or English (e.g., *"Cena mañana 21:00 en Luigi"* or *"Meeting friday 10am"*). Shortcut: `Q`.
@@ -33,7 +37,7 @@ Kayendar is a simple, lightweight, and self-hosted CalDAV/CardDAV server designe
 - 🔗 **Public iCal Feeds & Full Data Portability** — Generate token-secured public subscription URLs for external apps, plus one-click `.ics` calendar and `.vcf` address book export and import.
 - 📍 **Enhanced Event Metadata** — Full support for event **Locations** and **Reminders (Alarms)** synchronized bidirectionally.
 - ⚙️ **Consolidated Settings & User Profile** — Dedicated configuration dialog (Shortcut: `,`) with language switch, week start, CalDAV/CardDAV sync guide, alongside an executive sidebar user card (`🟢 En línea`, quick settings, logout).
-- ⌨️ **Keyboard Navigation & Glassmorphic Tooltips** — Full keyboard shortcut support (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) and hover tooltips for every control.
+- ⌨️ **Keyboard Navigation & Glassmorphic Tooltips** — Full keyboard shortcut support (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`, `Ctrl+K`) and hover tooltips for every control.
 - 🌐 **Bilingual (ES / EN)** — Dynamic multi-language toggle with instant live interface translation.
 - 🏷️ **Version & GitHub Integration** — Visible app release version tag (`v1.0.0`) and direct link to official GitHub repository across login and dashboard footers.
 - 🔐 **Secure Authentication** — Basic Authentication for DAV clients and secure session cookies for the web app.
@@ -261,10 +265,14 @@ If running behind HTTPS, make sure to set the environment variable:
 
 Kayendar es un servidor CalDAV/CardDAV simple, ligero y autoalojado diseñado para sincronizar tus calendarios y contactos en todos tus dispositivos (iOS, Android, Thunderbird, One Calendar) mientras ofrece una interfaz web interactiva y premium.
 
-## Características
-
+- 🔍 **Paleta de Comandos Omnisearch (`Ctrl+K`)** — Búsqueda global unificada en tiempo real de citas, tareas y contactos con filtros dinámicos y navegación instantánea por teclado (`↑`, `↓`, `Enter`).
+- 🧹 **Limpieza y Fusión de Contactos Duplicados** — Herramienta interactiva para detectar duplicados por teléfono, email o nombre completo y fusionar fichas vCard sin perder ningún dato.
+- 🔁 **Repetición de Eventos (RRULE)** — Soporte completo para patrones de recurrencia estándar RFC 5545 (Diario, Semanal, Bisemanal, Mensual, Anual) visualizados con indicador `🔁`.
+- 📡 **Suscripción a URL Remota y Auto-Sync** — Suscríbete a URLs de calendarios externos (como la URL iCal secreta de Google Calendar `https://calendar.google.com/calendar/ical/.../basic.ics`) con consulta en segundo plano y sincronización en 1 clic.
+- 🎂 **Calendario Automático de Cumpleaños de Contactos** — Los cumpleaños de contactos (`BDAY`) se sintetizan automáticamente en la parrilla del calendario con cálculo de edad y apertura directa de ficha en 1 clic (`🎂`).
+- 📱 **App PWA Offline y Notificaciones Locales Móviles** — Soporte PWA completo con caché `LocalStorage` sin conexión. Las alarmas de recordatorio (`VALARM`) suenan en tu móvil en cualquier lugar sin necesidad de internet o VPN.
 - 📅 **Servidor CalDAV y Auto-Discovery RFC 6764** — Sincronización completa de calendarios con iOS, macOS, Android (DAVx⁵/OpenSync), Thunderbird y One Calendar sin problemas de rutas manuales gracias a `/.well-known/caldav` y `/.well-known/carddav`.
-- 📇 **Servidor CardDAV y Ficha Completa de Contactos** — Sincronización con clientes estándar, admitiendo teléfonos ilimitados categorizados (Móvil 📱, Trabajo 💼, Casa 🏠, Otro 📞), dirección física (`ADR`) con apertura en Google Maps con 1 clic, empresa/organización (`ORG`), cargo (`TITLE`), cumpleaños (`BDAY`), notas (`NOTE`), emails y enlaces directos (`tel:` / `mailto:`).
+- 📇 **Servidor CardDAV y Ficha Completa de Contactos** — Sincronización con clientes estándar, admitiendo teléfonos ilimitados categorizados (Móvil 📱, Trabajo 💼, Casa 🏠, Otro 📞), múltiples emails (Personal ✉️, Trabajo 💼, Casa 🏠, Otro 📧), dirección física (`ADR`) con apertura en Google Maps con 1 clic, empresa/organización (`ORG`), cargo (`TITLE`), cumpleaños (`BDAY`), notas (`NOTE`) y enlaces directos (`tel:` / `mailto:`).
 - 📁 **Barra Lateral Contextual y Filtro por Libreta** — Interfaz limpia que se adapta al contexto: muestra calendarios solo en vista de calendario, y libretas solo en vista de contactos (con filtrado instantáneo al hacer clic en una libreta).
 - 🌐 **Cliente Web SPA Moderno** — Preciosa interfaz de usuario con diseño "glassmorphism", vistas mensuales/semanales responsivas, línea temporal en vivo en semana y gestión fluida de contactos.
 - ⚡ **Cita Rápida en Lenguaje Natural** — Crea citas redactando de forma intuitiva en español o inglés (ej: *"Cena mañana 21:00 en Luigi"* o *"Meeting friday 10am"*). Atajo: `Q`.
@@ -274,7 +282,7 @@ Kayendar es un servidor CalDAV/CardDAV simple, ligero y autoalojado diseñado pa
 - 🔗 **Enlaces Públicos iCal y Portabilidad Total** — Suscripción segura por URL con token para herramientas externas, además de importación y exportación en 1 clic de calendarios `.ics` y libretas de contactos `.vcf`.
 - 📍 **Metadatos de Eventos Mejorados** — Soporte completo para **Ubicaciones** y **Recordatorios (Alarmas)** de eventos sincronizados bidireccionalmente.
 - ⚙️ **Configuración Centralizada y Tarjeta de Usuario** — Panel integral de ajustes (Atajo: `,`) para cambiar idioma, primer día de semana y guía de sincronización CalDAV/CardDAV, complementado por la tarjeta ejecutiva de usuario en la barra lateral (`🟢 En línea`, ajustes rápidos, cerrar sesión).
-- ⌨️ **Navegación por Teclado y Tooltips** — Atajos rápidos (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`) e información contextual emergente en cada botón.
+- ⌨️ **Navegación por Teclado y Tooltips** — Atajos rápidos (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`, `Ctrl+K`) e información contextual emergente en cada botón.
 - 🌐 **Soporte Bilingüe (ES / EN)** — Selector interactivo con traducción completa y dinámica de la interfaz en tiempo real.
 - 🏷️ **Integración de Versión y GitHub** — Etiqueta visible de versión (`v1.0.0`) y enlace directo al repositorio oficial de GitHub en el pie de página y la pantalla de acceso.
 - 🔐 **Autenticación Segura** — Autenticación básica (Basic Auth) para clientes DAV y cookies de sesión seguras para la aplicación web.
