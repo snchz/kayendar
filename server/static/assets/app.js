@@ -2542,17 +2542,26 @@ function showLogin() {
   document.getElementById('login-screen').classList.add('active');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app-screen').classList.add('hidden');
+  document.getElementById('app-screen').classList.remove('active');
 }
 
 async function initApp() {
   document.getElementById('login-screen').classList.remove('active');
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-screen').classList.remove('hidden');
+  document.getElementById('app-screen').classList.add('active');
   document.getElementById('username-display').textContent = state.user;
   const avatarInit = document.getElementById('user-avatar-initial');
   if (avatarInit && state.user) {
     avatarInit.textContent = state.user.charAt(0).toUpperCase();
   }
+  try {
+    await loadAllData();
+  } catch (err) {
+    console.error("Failed to load initial app data:", err);
+  }
+  switchView('calendar');
+}
 
 // ── Omnisearch / Command Palette ─────────────────────────────
 let omnisearchActiveFilter = 'all';
@@ -2777,7 +2786,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const togglePassBtn = document.getElementById('toggle-password-btn');
   const passInput = document.getElementById('password-input');
   if (togglePassBtn && passInput) {
-    togglePassBtn.addEventListener('click', () => {
+    togglePassBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       const isPass = passInput.type === 'password';
       passInput.type = isPass ? 'text' : 'password';
       const eyeShow = document.getElementById('eye-icon-show');

@@ -160,6 +160,9 @@ textarea { resize: vertical; }
 .password-toggle-btn:hover {
   color: var(--text-primary);
 }
+.password-toggle-btn svg {
+  pointer-events: none;
+}
 
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 

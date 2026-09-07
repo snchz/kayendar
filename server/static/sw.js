@@ -1,9 +1,9 @@
 /* Kayendar Service Worker for PWA offline shell */
-const CACHE_NAME = 'kayendar-v11';
+const CACHE_NAME = 'kayendar-v12';
 const ASSETS_TO_CACHE = [
   '/',
-  '/assets/app.css?v=11',
-  '/assets/app.js?v=11',
+  '/assets/app.css?v=12',
+  '/assets/app.js?v=12',
   '/assets/icon-192.svg',
   '/manifest.webmanifest'
 ];
