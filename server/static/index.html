@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/app.css?v=19" />
+  <link rel="stylesheet" href="/assets/app.css?v=20" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#6366f1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -391,6 +391,10 @@
                 <button id="view-week-btn" class="toggle-btn" data-view="week" data-tooltip="Vista semanal con horas (Atajo: W)" data-i18n-tooltip="tt_week">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="4" x2="9" y2="22"/><line x1="15" y1="4" x2="15" y2="22"/></svg>
                   <span data-i18n="week">Semana</span>
+                </button>
+                <button id="view-day-btn" class="toggle-btn" data-view="day" data-tooltip="Vista diaria con horas (Atajo: D)" data-i18n-tooltip="tt_day">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="2" fill="currentColor"/></svg>
+                  <span data-i18n="day">Día</span>
                 </button>
               </div>
               <button id="toggle-tasks-btn" class="btn btn-ghost btn-sm" data-tooltip="Lista de tareas pendientes VTODO (arrástralas al calendario)" data-i18n-tooltip="tt_tasks">
@@ -835,6 +839,7 @@
         <div class="shortcut-row"><kbd>T</kbd> <span data-i18n="sc_today">Ir al día de hoy</span></div>
         <div class="shortcut-row"><kbd>M</kbd> <span data-i18n="sc_month">Vista Mensual</span></div>
         <div class="shortcut-row"><kbd>W</kbd> <span data-i18n="sc_week">Vista Semanal</span></div>
+        <div class="shortcut-row"><kbd>D</kbd> <span data-i18n="sc_day">Vista Diaria</span></div>
         <div class="shortcut-row"><kbd>J</kbd> / <kbd>&larr;</kbd> <span data-i18n="sc_prev">Período Anterior</span></div>
         <div class="shortcut-row"><kbd>K</kbd> / <kbd>&rarr;</kbd> <span data-i18n="sc_next">Período Siguiente</span></div>
         <div class="shortcut-row"><kbd>C</kbd> <span data-i18n="sc_new">Nuevo Evento</span></div>
@@ -917,6 +922,7 @@
             <div class="shortcut-chip"><kbd>T</kbd> <span data-i18n="sc_today">Ir a hoy</span></div>
             <div class="shortcut-chip"><kbd>M</kbd> <span data-i18n="sc_month">Mes</span></div>
             <div class="shortcut-chip"><kbd>W</kbd> <span data-i18n="sc_week">Semana</span></div>
+            <div class="shortcut-chip"><kbd>D</kbd> <span data-i18n="sc_day">Día</span></div>
             <div class="shortcut-chip"><kbd>J</kbd> / <kbd>&larr;</kbd> <span data-i18n="sc_prev">Anterior</span></div>
             <div class="shortcut-chip"><kbd>K</kbd> / <kbd>&rarr;</kbd> <span data-i18n="sc_next">Siguiente</span></div>
             <div class="shortcut-chip"><kbd>,</kbd> <span data-i18n="sc_settings">Ajustes</span></div>
@@ -1002,6 +1008,6 @@
   <!-- Toast notifications -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="/assets/app.js?v=19"></script>
+  <script src="/assets/app.js?v=20"></script>
 </body>
 </html>

@@ -645,6 +645,67 @@ textarea { resize: vertical; }
 }
 .week-event:hover { opacity: 0.85; }
 
+/* ── Day view ── */
+.day-grid {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+.day-grid::-webkit-scrollbar { width: 4px; }
+.day-grid::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
+
+.day-header {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.day-today-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  background: var(--accent);
+  color: #fff;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.day-event {
+  padding: 5px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  white-space: normal;
+}
+.day-event-title {
+  font-weight: 600;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.day-event-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.day-event-time { font-weight: 500; }
+.day-event-location { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* ── Shortcuts & Badges ── */
 .search-kbd {
   font-size: 10px;
@@ -2161,6 +2222,14 @@ kbd {
   .week-day-header {
     font-size: 11px;
     padding: 6px 2px;
+  }
+
+  /* ── Day View Grid on Mobile ── */
+  .day-grid {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+  .day-grid .week-day-col {
+    min-width: 0;
   }
 
   /* ── Contacts View on Mobile ── */

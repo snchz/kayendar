@@ -274,7 +274,7 @@ Kayendar es un servidor CalDAV/CardDAV simple, ligero y autoalojado diseñado pa
 - 📅 **Servidor CalDAV y Auto-Discovery RFC 6764** — Sincronización completa de calendarios con iOS, macOS, Android (DAVx⁵/OpenSync), Thunderbird y One Calendar sin problemas de rutas manuales gracias a `/.well-known/caldav` y `/.well-known/carddav`.
 - 📇 **Servidor CardDAV y Ficha Completa de Contactos** — Sincronización con clientes estándar, admitiendo teléfonos ilimitados categorizados (Móvil 📱, Trabajo 💼, Casa 🏠, Otro 📞), múltiples emails (Personal ✉️, Trabajo 💼, Casa 🏠, Otro 📧), dirección física (`ADR`) con apertura en Google Maps con 1 clic, empresa/organización (`ORG`), cargo (`TITLE`), cumpleaños (`BDAY`), notas (`NOTE`) y enlaces directos (`tel:` / `mailto:`).
 - 📁 **Barra Lateral Contextual y Filtro por Libreta** — Interfaz limpia que se adapta al contexto: muestra calendarios solo en vista de calendario, y libretas solo en vista de contactos (con filtrado instantáneo al hacer clic en una libreta).
-- 🌐 **Cliente Web SPA Moderno** — Preciosa interfaz de usuario con diseño "glassmorphism", vistas mensuales/semanales responsivas, línea temporal en vivo en semana y gestión fluida de contactos.
+- 🌐 **Cliente Web SPA Moderno** — Preciosa interfaz de usuario con diseño "glassmorphism", vistas mensuales, semanales y diarias responsivas, línea temporal en vivo en semana/día y gestión fluida de contactos.
 - ⚡ **Cita Rápida en Lenguaje Natural** — Crea citas redactando de forma intuitiva en español o inglés (ej: *"Cena mañana 21:00 en Luigi"* o *"Meeting friday 10am"*). Atajo: `Q`.
 - ➕ **Creación de Calendarios dentro del Evento** — Añade y personaliza un nuevo calendario directamente desde el formulario de "Nuevo Evento" sin perder los datos que ya habías introducido.
 - 📋 **Panel de Tareas VTODO** — Gestor de tareas integrado con soporte RFC 5545 VTODO; arrastra tareas al calendario mensual o a los bloques horarios semanales para agendarlas.
@@ -282,7 +282,7 @@ Kayendar es un servidor CalDAV/CardDAV simple, ligero y autoalojado diseñado pa
 - 🔗 **Enlaces Públicos iCal y Portabilidad Total** — Suscripción segura por URL con token para herramientas externas, además de importación y exportación en 1 clic de calendarios `.ics` y libretas de contactos `.vcf`.
 - 📍 **Metadatos de Eventos Mejorados** — Soporte completo para **Ubicaciones** y **Recordatorios (Alarmas)** de eventos sincronizados bidireccionalmente.
 - ⚙️ **Configuración Centralizada y Tarjeta de Usuario** — Panel integral de ajustes (Atajo: `,`) para cambiar idioma, primer día de semana y guía de sincronización CalDAV/CardDAV, complementado por la tarjeta ejecutiva de usuario en la barra lateral (`🟢 En línea`, ajustes rápidos, cerrar sesión).
-- ⌨️ **Navegación por Teclado y Tooltips** — Atajos rápidos (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `J`, `K`, `C`, `Esc`, `Ctrl+K`) e información contextual emergente en cada botón.
+- ⌨️ **Navegación por Teclado y Tooltips** — Atajos rápidos (`?`, `,`, `Q`, `/`, `T`, `M`, `W`, `D`, `J`, `K`, `C`, `Esc`, `Ctrl+K`) e información contextual emergente en cada botón.
 - 🌐 **Soporte Bilingüe (ES / EN)** — Selector interactivo con traducción completa y dinámica de la interfaz en tiempo real.
 - 🏷️ **Integración de Versión y GitHub** — Etiqueta visible de versión (`v1.0.0`) y enlace directo al repositorio oficial de GitHub en el pie de página y la pantalla de acceso.
 - 🔐 **Autenticación Segura** — Autenticación básica (Basic Auth) para clientes DAV y cookies de sesión seguras para la aplicación web.
