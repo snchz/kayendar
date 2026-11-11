@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/app.css?v=20" />
+  <link rel="stylesheet" href="/assets/app.css?v=21" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#6366f1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -509,7 +509,7 @@
       <form id="event-form">
         <div class="field">
           <label for="event-title" data-i18n="event_title">Título</label>
-          <input id="event-title" type="text" placeholder="Título del evento" required />
+          <input id="event-title" type="text" placeholder="Título del evento" data-i18n-placeholder="event_title_placeholder" required />
         </div>
         <div class="field-row">
           <div class="field">
@@ -540,7 +540,7 @@
         </div>
         <div class="field">
           <label for="event-location" data-i18n="event_location">Ubicación</label>
-          <input id="event-location" type="text" placeholder="Ubicación opcional..." />
+          <input id="event-location" type="text" placeholder="Ubicación opcional..." data-i18n-placeholder="location_placeholder" />
         </div>
         <div class="field-row">
           <div class="field">
@@ -570,7 +570,7 @@
         </div>
         <div class="field">
           <label for="event-description" data-i18n="event_description">Descripción</label>
-          <textarea id="event-description" rows="3" placeholder="Descripción opcional..."></textarea>
+          <textarea id="event-description" rows="3" placeholder="Descripción opcional..." data-i18n-placeholder="desc_placeholder"></textarea>
         </div>
         <input type="hidden" id="event-uid" />
         <input type="hidden" id="event-filename" />
@@ -912,7 +912,7 @@
         </div>
 
         <!-- Shortcuts section -->
-        <div class="settings-section">
+        <div class="settings-section" id="settings-shortcuts-section">
           <h4 class="settings-section-title" data-i18n="shortcuts_title">Atajos de Teclado</h4>
           <div class="settings-shortcuts-grid">
             <div class="shortcut-chip"><kbd>Ctrl+K</kbd> <span data-i18n="sc_omnisearch">Búsqueda global</span></div>
@@ -1008,6 +1008,6 @@
   <!-- Toast notifications -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="/assets/app.js?v=20"></script>
+  <script src="/assets/app.js?v=21"></script>
 </body>
 </html>

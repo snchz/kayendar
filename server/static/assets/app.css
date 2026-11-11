@@ -31,7 +31,7 @@
 
   --sidebar-width: 260px;
   --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
-  --font: 'Inter', system-ui, sans-serif;
+  --font: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 }
 
 html, body { height: 100%; }
@@ -164,7 +164,9 @@ textarea { resize: vertical; }
   pointer-events: none;
 }
 
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.field { min-width: 0; }
+.field input, .field select, .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
 
 /* ── Buttons ── */
 .btn {
@@ -582,7 +584,21 @@ textarea { resize: vertical; }
 .week-grid::-webkit-scrollbar { width: 4px; }
 .week-grid::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
 
-.week-time-col { border-right: 1px solid var(--glass-border); flex-shrink: 0; }
+.week-time-col {
+  border-right: 1px solid var(--glass-border);
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 25;
+  background: var(--bg-card);
+}
+.week-time-col > div:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+}
 .week-time-slot {
   height: 56px; border-bottom: 1px solid rgba(255,255,255,0.04);
   display: flex; align-items: flex-start; padding: 4px 8px;
@@ -592,11 +608,20 @@ textarea { resize: vertical; }
 .week-day-col {
   border-right: 1px solid var(--glass-border); position: relative;
   min-width: 0;
-  overflow: hidden;
   box-sizing: border-box;
 }
 .week-day-col:last-child { border-right: none; }
 .week-day-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 6px; text-align: center; border-bottom: 1px solid var(--glass-border);
   font-size: 12px; font-weight: 500; color: var(--text-secondary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -659,6 +684,13 @@ textarea { resize: vertical; }
 .day-grid::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
 
 .day-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  height: 40px;
+  box-sizing: border-box;
   font-size: 13px;
   font-weight: 600;
   padding: 8px 14px;
@@ -666,6 +698,7 @@ textarea { resize: vertical; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-bottom: 1px solid var(--glass-border);
 }
 .day-today-badge {
   font-size: 10px;
@@ -1016,7 +1049,7 @@ textarea { resize: vertical; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
-  width: 480px; max-width: calc(100vw - 32px);
+  width: 500px; max-width: calc(100vw - 32px);
   border-radius: var(--radius-xl); padding: 28px;
   display: flex; flex-direction: column; gap: 20px;
   animation: slideUp 0.2s ease;
@@ -1774,7 +1807,7 @@ kbd {
   color: var(--text-muted);
   padding: 8px 18px 4px;
 }
-.omni-item {
+.omni-item, .omni-result-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1782,10 +1815,11 @@ kbd {
   cursor: pointer;
   transition: background 0.1s ease;
 }
-.omni-item:hover, .omni-item.selected {
+.omni-item:hover, .omni-item.selected,
+.omni-result-item:hover, .omni-result-item.selected {
   background: rgba(99, 102, 241, 0.15);
 }
-.omni-item-icon {
+.omni-item-icon, .omni-result-icon {
   width: 30px;
   height: 30px;
   border-radius: 8px;
@@ -1796,11 +1830,11 @@ kbd {
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.05);
 }
-.omni-item-content {
+.omni-item-content, .omni-result-details {
   flex: 1;
   min-width: 0;
 }
-.omni-item-title {
+.omni-item-title, .omni-result-title {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-primary);
@@ -1808,13 +1842,13 @@ kbd {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.omni-item-title mark {
+.omni-item-title mark, .omni-result-title mark {
   background: rgba(99, 102, 241, 0.35);
   color: #fff;
   border-radius: 2px;
   padding: 0 2px;
 }
-.omni-item-subtitle {
+.omni-item-subtitle, .omni-result-sub {
   font-size: 11px;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -1822,7 +1856,15 @@ kbd {
   text-overflow: ellipsis;
   margin-top: 2px;
 }
-.omni-empty {
+.omni-result-enter {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--glass-border);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.omni-empty, .omnisearch-empty {
   padding: 30px 18px;
   text-align: center;
   color: var(--text-muted);
@@ -2206,22 +2248,39 @@ kbd {
 
   /* ── Week View Grid on Mobile ── */
   .week-grid {
-    overflow-x: auto;
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
+    grid-template-columns: 42px repeat(7, minmax(85px, 1fr)) !important;
   }
 
   .week-time-col {
     width: 42px;
     font-size: 10px;
+    position: sticky;
+    left: 0;
+    z-index: 25;
+    background: var(--bg-card);
   }
 
   .week-day-col {
-    min-width: 80px;
+    min-width: 85px;
   }
 
   .week-day-header {
     font-size: 11px;
     padding: 6px 2px;
+  }
+
+  /* Ocultar botones redundantes en la cabecera en móvil */
+  #toggle-tasks-btn,
+  #quick-add-btn,
+  #add-event-btn {
+    display: none !important;
+  }
+
+  /* Ocultar sección de atajos de teclado físico en ajustes en móvil */
+  #settings-shortcuts-section {
+    display: none !important;
   }
 
   /* ── Day View Grid on Mobile ── */
@@ -2288,6 +2347,13 @@ kbd {
   }
 
   .modal-footer {
+    position: sticky;
+    bottom: -16px;
+    background: var(--bg-card);
+    padding: 12px 0 4px;
+    border-top: 1px solid var(--glass-border);
+    margin-top: auto;
+    z-index: 5;
     flex-direction: column-reverse;
     gap: 8px;
   }

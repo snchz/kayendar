@@ -57,6 +57,9 @@ const i18n = {
     new_contact: 'Nuevo Contacto',
     search_events: 'Buscar citas...',
     search_contacts: 'Buscar contactos...',
+    event_title_placeholder: 'Título del evento',
+    location_placeholder: 'Ubicación opcional...',
+    desc_placeholder: 'Descripción opcional...',
     add_task_placeholder: '+ Añadir tarea y pulsar Enter...',
     no_tasks: 'No hay tareas pendientes. ¡Añade una arriba!',
     no_contacts: 'No hay contactos aún. ¡Añade tu primer contacto!',
@@ -324,6 +327,9 @@ const i18n = {
     new_contact: 'New Contact',
     search_events: 'Search events...',
     search_contacts: 'Search contacts...',
+    event_title_placeholder: 'Event title',
+    location_placeholder: 'Optional location...',
+    desc_placeholder: 'Optional description...',
     add_task_placeholder: '+ Add a task and press Enter...',
     no_tasks: 'No tasks yet. Add a task above!',
     no_contacts: 'No contacts yet. Add your first contact!',
@@ -2890,6 +2896,16 @@ async function initApp() {
     console.error("Failed to load initial app data:", err);
   }
   switchView('calendar');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ── Omnisearch / Command Palette ─────────────────────────────
